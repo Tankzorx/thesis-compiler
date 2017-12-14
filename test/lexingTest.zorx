@@ -1,0 +1,55 @@
+module GCD {
+
+  
+  
+  
+
+  datapath {
+    dpOut: out,
+    dpIn1: in,
+    dpIn2: in,
+    ANeqB: reg,
+    ALessB: reg,
+    a: reg,
+    b: reg;
+    Init {
+      a := dpIn1;
+      b := dpIn2;
+      ANeqB := a != b;
+    },
+    Idle {
+    
+    },
+    CheckALessB {
+      ALessB := a < b;
+    },
+    BSubA {
+      b := b - a;
+    },
+    ASubB {
+      a := a - b;
+    },
+    CheckANeqB {
+      ANeqB := a != b;
+    },
+    ReturnA {
+      cOut := 1;
+      dpOut := a;
+    }
+  }
+  controller {
+    cOut: out,
+    cIn: in;
+    Idle [cIn == 1](Init)> While,
+    Idle [cIn == 0](Idle)> Idle,
+
+    While [ANeqB == 1] (CheckALessB)> IfCond,
+    While [ANeqB == 0] (ReturnA)> Idle,
+    
+    IfCond [ALessB == 1] (BSubA)> Then,
+    IfCond [ALessB == 0] (ASubB)> Else,
+
+    Then [true] (CheckANeqB)> While,
+    Else [true] (CheckANeqB)> While
+  }
+}

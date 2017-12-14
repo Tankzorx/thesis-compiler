@@ -1,0 +1,5 @@
+datapath {
+	act1 {
+		outreg1 := 3+4;
+	}
+}
