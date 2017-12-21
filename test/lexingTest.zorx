@@ -1,9 +1,4 @@
 module GCD {
-
-  
-  
-  
-
   datapath {
     dpOut: out,
     dpIn1: in,
@@ -18,7 +13,7 @@ module GCD {
       ANeqB := a != b;
     },
     Idle {
-    
+      
     },
     CheckALessB {
       ALessB := a < b;
@@ -38,7 +33,8 @@ module GCD {
     }
   }
   controller {
-    cOut: out,
+    //
+    cOut: out, // inline comment
     cIn: in;
     Idle [cIn == 1](Init)> While,
     Idle [cIn == 0](Idle)> Idle,

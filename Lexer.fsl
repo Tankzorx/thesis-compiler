@@ -16,7 +16,11 @@ let keyword s =
     | "reg"       -> REG
     | "true"         -> TRUE
     | "false"        -> FALSE
+    | "status"       -> STATUSSIGNAL
+    | "control"      -> CONTROLSIGNAL
     | "if"           -> IF
+    | "int"          -> INTEGER
+    | "bool"         -> BOOLEAN
     | _              -> NAME s
 }
 
@@ -30,7 +34,7 @@ let identifier  = char(char|digit|['_'])*
 let quote                 = '\"'
 let StringConst           = quote ([^'\"'])* quote
 let commentStart = "//"
-let comment = "//[^a]"
+let comment = "//" ([^ '\n' ]*|[^ '\r' '\n' ]*)
 
 
 rule tokenize = parse
@@ -39,6 +43,11 @@ rule tokenize = parse
     lexbuf.EndPos <- lexbuf.EndPos.NextLine;
     tokenize lexbuf 
   }
+  | comment     { 
+    printfn "Read comment: %s " Encoding.UTF8.GetString(lexbuf.Lexeme)
+    lexbuf.EndPos <- lexbuf.EndPos.NextLine;
+    tokenize lexbuf
+   }
   | int         { printfn "Lexer read int"; INT<| Int32.Parse(Encoding.UTF8.GetString(lexbuf.Lexeme)) }
   | "("         { printfn "Lexer read LP"; LP }
   | ")"         { printfn "Lexer read LP"; RP }
@@ -51,6 +60,7 @@ rule tokenize = parse
   | "!="        { NEQ }
   | "=="        { EQ }
   | "&&"        { AND }
+  | "!"         { NOT }
   | "||"        { OR }
   | ":="        { ASSIGN }
   | ">"         { printfn "Lexer read GEQ"; GT }

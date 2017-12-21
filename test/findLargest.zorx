@@ -1,0 +1,33 @@
+module FindLargest {
+  datapath {
+    dpIn: int in, dpOut: int out, largest: int reg, temp: int reg,
+    newLargestFound: bool status;
+    Init { largest := dpIn; },
+    Idle {},
+    ReadInput {
+        newLargestFound := dpIn > largest;
+        temp := dpIn;
+    },
+    SetNewLargest { largest := temp; },
+    Return {
+        dpOut := largest;
+        cOut := true;
+    },
+    ReturnTemp {
+        dpOut := temp;
+        cOut := true;
+    }
+  }
+  controller {
+    cIn: bool in,
+    cOut: bool out;
+    Idle [cIn == 1](Init)> ReadIn,
+    Idle [cIn == 0](Idle)> Idle,
+
+    ReadIn [cIn && newLargestFound] (ReadInput, SetNewLargest)> ReadIn,
+    ReadIn [cIn && !newLargestFound] (ReadInput)> ReadIn,
+
+    ReadIn [!cIn && newLargestFound] (ReturnTemp)> Idle,
+    ReadIn [!cIn && !newLargestFound] (Return)> Idle
+  }
+}
