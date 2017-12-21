@@ -7,14 +7,14 @@
 %token <string> NAME
 %token MODULE INPORT OUTPORT REG CONTROLSIGNAL STATUSSIGNAL FSM DATAPATH
 %token LCP RCP LP RP LSP RSP EOF COMMA COLON SEMICOLON DASH ASSIGN
+%token PLUS MINUS
 %token NEQ EQ LEQ GEQ LT GT INTEGER BOOLEAN NOT
 %token AND OR 
-%token PLUS MINUS
 %token TRUE FALSE IF
 
-%left NOT
-%left NEQ EQ LEQ GEQ LT GT
 %left AND OR
+%left EQ NEQ  LEQ GEQ LT GT
+%left NOT
 %left PLUS MINUS
 
 %type <Specification> start
@@ -67,16 +67,16 @@ Access:
 Expr:
     | Access                         { Access($1) }
     | LP Expr RP                     { $2 }
-    | TRUE                           { B(true) }
-    | FALSE                          { B(false) }
-    | INT                            { N($1) }
+    | TRUE                           { C (B true) }
+    | FALSE                          { C (B false) }
+    | INT                            { C (N ($1)) }
+    | Expr PLUS Expr                 { BExp($1,Plus,$3) }
+    | Expr EQ Expr                   { BExp($1,Eq,$3) }
     | Expr NEQ Expr                  { BExp($1,Neq,$3) }
     | Expr AND Expr                  { BExp($1,And,$3) }
     | Expr OR Expr                   { BExp($1,Or,$3) }
     | Expr LT Expr                   { BExp($1,Lt,$3) }
     | Expr GT Expr                   { BExp($1,Gt,$3) }
-    | Expr EQ Expr                   { BExp($1,Eq,$3) }
-    | Expr PLUS Expr                 { BExp($1,Plus,$3) }
     | Expr MINUS Expr                { BExp($1,Minus,$3) }
     | NOT Expr                       { UExp($2, Not)}
 

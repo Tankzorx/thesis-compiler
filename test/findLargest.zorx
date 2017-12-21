@@ -21,8 +21,8 @@ module FindLargest {
   controller {
     cIn: bool in,
     cOut: bool out;
-    Idle [cIn == 1](Init)> ReadIn,
-    Idle [cIn == 0](Idle)> Idle,
+    Idle [(4 + 5 == 9) && cIn == true || false == false](Init)> ReadIn,
+    Idle [cIn == false](Idle)> Idle,
 
     ReadIn [cIn && newLargestFound] (ReadInput, SetNewLargest)> ReadIn,
     ReadIn [cIn && !newLargestFound] (ReadInput)> ReadIn,

@@ -11,6 +11,8 @@ bin
 Parser.fs
 Parser.fsi
 Lexer.fs
+.paket
+paket.lock
 
 *.exe
 

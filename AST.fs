@@ -5,12 +5,15 @@ open System
 module AST =
 
     type Exp =
-        | N  of int                   (* Integer constant *)
-        | B of bool                   (* Boolean constant *)
+        | C of Const
         | Access of Access            (* Variable access  *)
         | BExp of Exp * BinOp * Exp   (* Binary Operator  *)
         | UExp of Exp * UnaryOp
-        
+
+    and Const =        
+        | N  of int                   (* Integer constant *)
+        | B of bool                   (* Boolean constant *)
+
     and Access = 
         | AVar of string
 
@@ -45,7 +48,6 @@ module AST =
         | Integer
 
     type Stm = 
-        | C of int
         | Ass of string * Exp
 
     type Transition =
@@ -66,4 +68,5 @@ module AST =
         M of String * Fsm * Datapath // test
 
     type Specification = S of Module list
- 
+
+
