@@ -2,7 +2,10 @@ module FindLargest {
   datapath {
     dpIn: int in, dpOut: int out, largest: int reg, temp: int reg,
     newLargestFound: bool status;
-    Init { largest := dpIn; },
+    Init {
+      largest := dpIn;
+      temp := dpIn;
+    },
     Idle {},
     ReadInput {
         newLargestFound := dpIn > largest;
@@ -21,7 +24,7 @@ module FindLargest {
   controller {
     cIn: bool in,
     cOut: bool out;
-    Idle [(4 + 5 == 9) && cIn == true || false == false](Init)> ReadIn,
+    Idle [cIn == true](Init)> ReadIn,
     Idle [cIn == false](Idle)> Idle,
 
     ReadIn [cIn && newLargestFound] (ReadInput, SetNewLargest)> ReadIn,
