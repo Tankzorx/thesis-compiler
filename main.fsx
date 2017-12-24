@@ -20,13 +20,13 @@ match ms with
     | [] -> failwith "Empty fsmd"
     | m::ms ->
         let (M (name, fsm, dp)) = m
-        let (Fsm (decL, tL)) = fsm
-        match tL with
-            | [] -> failwith "Empty transition list"
-            | t::tls -> 
-                let (T (s1, exp, actionList, s2)) = t
-                let v = intpExp exp (Map.empty.Add("cIn", B true))
-                printfn "%A" (v = (B true))
+        // let (Fsm (decL, tL)) = fsm
+        // match tL with
+        //     | [] -> failwith "Empty transition list"
+        //     | t::tls -> 
+        //         let (T (s1, exp, actionList, s2)) = t
+        //         let v = intpExp exp (Map.empty.Add("cIn", B true))
+        //         printfn "%A" (v = (B true))
         let nextStateFunction = intpFsm fsm
         let dummyMap = Map.empty.Add("cIn", B false).Add("newLargestFound", B false)
         let nextStateRes = nextStateFunction ("Idle", dummyMap)
@@ -47,6 +47,19 @@ match ms with
         let cycle2 = cycle2.Add("dpIn", N 5)
         let cycle3 = dpFunction (["ReadInput"; "SetNewLargest"], cycle2)
         printfn "%A" cycle3
+        // Individual components seems to be working.
+        // Now need to set up the complete transition system.
+        // let (fsmFunc, dpFunc, startEnv) = intpModule m
+        let (transitionSystem, startEnv) = intpModule m
+        let startEnv = startEnv.Add("cIn", B true).Add("dpIn", N 3)
+        printfn "%A" startEnv
+        let conf0 = ("Idle", startEnv)
+        let (s1, ctx1) = transitionSystem conf0
+        printfn "%A, %A" s1 ctx1
+        let (s2, ctx2) = transitionSystem (s1, ctx1.Add("dpIn", N 4))
+        printfn "%A, %A" s2 ctx2
+        let (s3, ctx3) = transitionSystem (s2, ctx2.Add("dpIn", N 5).Add("cIn", B false))
+        printfn "%A, %A" s3 ctx3
         
 
         

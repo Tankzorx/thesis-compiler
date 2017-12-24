@@ -16,6 +16,20 @@ module Interpreter =
             let (T (stateName, _, _, _)) = t
             stateName = state
         ) tList
+
+    let initVarEnvFromDecls decls (ctx: Map<string, Const>) =
+        let rec innerF decls (ctx: Map<string, Const>) =
+            match decls with
+                | [] -> ctx
+                | dec::tail ->
+                    match dec with
+                        | RegDec (varName, _, Boolean) ->
+                            innerF tail (ctx.Add(varName, B false))
+                        | RegDec (varName, _, _) ->
+                            innerF tail (ctx.Add(varName, N 0))
+        innerF decls ctx
+
+    
     let rec intpSpecification (ast: Specification) =
         let ( S modules) = ast
         match modules with
@@ -31,7 +45,17 @@ module Interpreter =
 
         // let actionNames = List.map (fun x -> x) actL
         let fsmFunc = intpFsm fsm
-        fsmFunc
+        let dpFunc = intpDp dp
+        let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls fsmDecL
+        let retVal conf =
+            let (state, ctx) = conf
+            let (newState, actionList, _) = match fsmFunc (state, ctx) with
+                                            | Success (a, b, c) -> (a, b, c)
+                                            | Error s -> failwith s
+            let (newCtx) = dpFunc (actionList, ctx)
+            (newState, newCtx)
+
+        (retVal, startEnv)
     
     and intpStm (stm: Stm, ctx: Map<string, Const>)  =
         let (Ass (lval, exp)) = stm
@@ -102,6 +126,11 @@ module Interpreter =
             | C (B value) -> B value
             | C (N value) -> N value
             | Access access    -> intpAccess access ctx
+            | UExp (e1, op) ->
+                let v1 = intpExp e1 ctx
+                match v1, op with
+                    | N value1, Not -> failwith (sprintf "Operator 'Not', can't be applied to variable of type integer.")
+                    | B value1, Not -> B (not value1)
             | BExp (e1, op, e2) ->
                 let v1 = intpExp e1 ctx
                 let v2 = intpExp e2 ctx
