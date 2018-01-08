@@ -114,9 +114,8 @@ module Interpreter =
                             inner tail
             inner actionL
 
-        let retVal (actionList: string list, ctx: Map<string, Const>) =
+        let retVal (actionList: string list, oldRegisterState: Map<string, Const>) =
             logger (sprintf "DP: executing %A" actionList)
-            let oldRegisterState = ctx
             logger "----Printing register state change -----"
             logger (sprintf "oldState: %A" oldRegisterState)
 
@@ -130,12 +129,12 @@ module Interpreter =
             let registerChanges =
                 List.fold (fun acc actionName ->
                     let action = getActionByName actionName
-                    (intpAction (action, ctx))@acc
+                    (intpAction (action, oldRegisterState))@acc
                 ) [] actionList
 
             logger (sprintf "registerChanges: %A" registerChanges)
 
-            let newRegisterState = addInputVectorToEnv registerChanges ctx
+            let newRegisterState = addInputVectorToEnv registerChanges oldRegisterState
 
             logger (sprintf "newState: %A" newRegisterState)
             logger "----/Printing register state change -----"

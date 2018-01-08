@@ -11,10 +11,12 @@ module FindLargest {
         newLargestFound := dpIn > largest;
         temp := dpIn;
     },
-    ReadInputAndSetLargest {
+    ReadInput2 {
       newLargestFound := dpIn > temp;
-      largest := temp;
       temp := dpIn;
+    },
+    SetLargest {
+      largest := temp;
     },
     Return {
         dpOut := largest;
@@ -31,7 +33,7 @@ module FindLargest {
     Idle [cIn == true](Init)> ReadIn,
     Idle [cIn == false](Idle)> Idle,
 
-    ReadIn [cIn && newLargestFound] (ReadInputAndSetLargest)> ReadIn,
+    ReadIn [cIn && newLargestFound] (ReadInput2, SetLargest)> ReadIn,
     ReadIn [cIn && !newLargestFound] (ReadInput)> ReadIn,
 
     ReadIn [!cIn && newLargestFound] (ReturnTemp)> Idle,
