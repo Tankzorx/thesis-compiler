@@ -2,7 +2,6 @@ namespace Zorx
 
 
 open Zorx.Frontend.AST
-// open Zorx.Frontend.intpHelpers
 
 
 module Interpreter =
@@ -16,6 +15,14 @@ module Interpreter =
             let (T (stateName, _, _, _)) = t
             stateName = state
         ) tList
+
+    let logging = true
+
+    let logger msg =
+        if logging then
+            printfn "%A" msg
+        else
+            ()
 
     let initVarEnvFromDecls decls (ctx: Map<string, Const>) =
         let rec innerF decls (ctx: Map<string, Const>) =
@@ -60,13 +67,13 @@ module Interpreter =
     and intpStm (stm: Stm, ctx: Map<string, Const>)  =
         let (Ass (lval, exp)) = stm
         let value = intpExp exp ctx
-        ctx.Add(lval, value)
+        logger (sprintf "Assigning: %A := %A" lval value)
+        (lval, value)
 
     // Should return nextState function. input: state, cIn, ss
     // Output: next state, control signal(action list), csOut
     and intpFsm (fsm: Fsm) =
         let (Fsm (decL, tL)) = fsm
-
         let retVal (state: string, (inputVector: Map<string, Const>)): FsmNextStateResult =
 
             let validTransitions =
@@ -85,6 +92,7 @@ module Interpreter =
                 Error errMsg
             else
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
+                logger (sprintf "FSM: transition %A->%A with %A" s1 s2 exp)
                 Success (s2, actions, C (B false))
         retVal
     
@@ -107,21 +115,45 @@ module Interpreter =
             inner actionL
 
         let retVal (actionList: string list, ctx: Map<string, Const>) =
+            logger (sprintf "DP: executing %A" actionList)
             let oldRegisterState = ctx
-            List.fold (fun acc actionName ->
-                // printfn "I'm folding, folding, folding.. %A" actionName
-                let action = getActionByName actionName
-                intpAction (action, oldRegisterState)
-            ) ctx actionList
+            logger "----Printing register state change -----"
+            logger (sprintf "oldState: %A" oldRegisterState)
+
+            let rec addInputVectorToEnv input (env: Map<string, Const>) =
+                match input with
+                    | [] -> env
+                    | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
+            // To ensure all actions are working on the same register state
+            // (primed register state)
+            // We push all changes to a list, and merge the changes later.
+            let registerChanges =
+                List.fold (fun acc actionName ->
+                    let action = getActionByName actionName
+                    (intpAction (action, ctx))@acc
+                ) [] actionList
+
+            logger (sprintf "registerChanges: %A" registerChanges)
+
+            let newRegisterState = addInputVectorToEnv registerChanges ctx
+
+            logger (sprintf "newState: %A" newRegisterState)
+            logger "----/Printing register state change -----"
+
+            newRegisterState
 
         retVal
 
-    and intpAction (action: Action, ctx: Map<string, Const>): Map<string, Const> =
+    and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
+        // Create oldCtx to use initial register values throughout.
+        let oldCtx = ctx
         let (Action (name, stmL)) = action
-        List.fold (fun acc stm  -> intpStm (stm, acc)) ctx stmL
+        List.fold (fun acc stm  ->
+            let (varName, value) = intpStm (stm, oldCtx)
+            (varName, value)::acc
+        ) [] stmL
 
     and intpExp (exp: Exp) ctx: Const =
-        // failwith "NYI"
         match exp with
             | C (B value) -> B value
             | C (N value) -> N value
@@ -129,7 +161,7 @@ module Interpreter =
             | UExp (e1, op) ->
                 let v1 = intpExp e1 ctx
                 match v1, op with
-                    | N value1, Not -> failwith (sprintf "Operator 'Not', can't be applied to variable of type integer.")
+                    | N _, Not -> failwith (sprintf "Operator 'Not', can't be applied to variable of type integer.")
                     | B value1, Not -> B (not value1)
             | BExp (e1, op, e2) ->
                 let v1 = intpExp e1 ctx
@@ -147,7 +179,9 @@ module Interpreter =
                     // | Plus -> N (v1 + v2)
                     | N value1, N value2 ->
                         match op with
-                            | Gt -> B (value1 > value2)
+                            | Gt -> 
+                                logger (sprintf "%A > %A" value1 value2)
+                                B (value1 > value2)
                             | Eq -> B (value1 = value2)
                             | Neq -> B (value1 <> value2)
                             | Lt -> B (value1 < value2)
@@ -162,7 +196,27 @@ module Interpreter =
 
     and intpAccess (access: Access) (ctx: Map<string, Const>) =
         let (AVar s) = access
-        printfn "Accessing: %s" s
+        logger (sprintf "Accessing: %s (%A)" s ctx.[s])
         ctx.[s]
 
+    let runner parsedModule startState (inputVector: (string * Const) list list) =
+        let (transitionSystem, startEnv) = intpModule parsedModule
 
+        let mapToList map = Map.fold (fun foldState key value -> ((key, value)::foldState)) [] map
+
+        let rec addInputVectorToEnv input (env: Map<string, Const>) =
+            match input with
+                | [] -> env
+                | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
+
+        let rec inner state (env: Map<string, Const>) inputVector (runVector: (string * Const) list list) =
+            match inputVector with
+                | [] -> List.rev runVector
+                | cycleInput::rest ->
+                    let env = addInputVectorToEnv cycleInput env
+                    let (nextState, nextEnv) = transitionSystem (state, env)
+                    let cycleOutput = mapToList nextEnv
+                    logger "Cycle-----"
+                    inner nextState nextEnv rest (cycleOutput::runVector)
+
+        inner startState startEnv  inputVector [(mapToList startEnv)]
