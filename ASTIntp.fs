@@ -54,7 +54,7 @@ module Interpreter =
         let fsmFunc = intpFsm fsm
         let dpFunc = intpDp dp
         let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls fsmDecL
-        let retVal conf =
+        let moduleFunc conf =
             let (state, ctx) = conf
             let (newState, actionList, _) = match fsmFunc (state, ctx) with
                                             | Success (a, b, c) -> (a, b, c)
@@ -62,7 +62,7 @@ module Interpreter =
             let (newCtx) = dpFunc (actionList, ctx)
             (newState, newCtx)
 
-        (retVal, startEnv)
+        (moduleFunc, startEnv)
     
     and intpStm (stm: Stm, ctx: Map<string, Const>)  =
         let (Ass (lval, exp)) = stm
@@ -74,7 +74,7 @@ module Interpreter =
     // Output: next state, control signal(action list), csOut
     and intpFsm (fsm: Fsm) =
         let (Fsm (decL, tL)) = fsm
-        let retVal (state: string, (inputVector: Map<string, Const>)): FsmNextStateResult =
+        let controllerFunc (state: string, (inputVector: Map<string, Const>)): FsmNextStateResult =
 
             let validTransitions =
                 findTransitionsByStartState tL state |>
@@ -94,7 +94,7 @@ module Interpreter =
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
                 logger (sprintf "FSM: transition %A->%A with %A" s1 s2 exp)
                 Success (s2, actions, C (B false))
-        retVal
+        controllerFunc
     
     // Should return datapath function.
     // dp function has the following pseudo signature:
@@ -114,7 +114,7 @@ module Interpreter =
                             inner tail
             inner actionL
 
-        let retVal (actionList: string list, oldRegisterState: Map<string, Const>) =
+        let dpFunc (actionList: string list, oldRegisterState: Map<string, Const>) =
             logger (sprintf "DP: executing %A" actionList)
             logger "----Printing register state change -----"
             logger (sprintf "oldState: %A" oldRegisterState)
@@ -141,7 +141,7 @@ module Interpreter =
 
             newRegisterState
 
-        retVal
+        dpFunc
 
     and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
         // Create oldCtx to use initial register values throughout.
@@ -172,10 +172,7 @@ module Interpreter =
                             | Neq -> B (value1 <> value2)
                             | And -> B (value1 && value2)
                             | Or -> B (value1 || value2)
-                            // | Eq -> B (value1 = value2)
                             | _  -> failwith (sprintf "Operator '%A' expects bool*bool, but got '%A'*'%A' " op v1 v2)
-                    // | And -> B (B v1 && B v2)
-                    // | Plus -> N (v1 + v2)
                     | N value1, N value2 ->
                         match op with
                             | Gt -> 
