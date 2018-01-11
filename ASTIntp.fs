@@ -119,10 +119,10 @@ module Interpreter =
             logger "----Printing register state change -----"
             logger (sprintf "oldState: %A" oldRegisterState)
 
-            let rec addInputVectorToEnv input (env: Map<string, Const>) =
+            let rec addVectorToEnv (input: (string * Const) list) (env: Map<string, Const>) =
                 match input with
                     | [] -> env
-                    | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
+                    | (varName, c)::tl -> addVectorToEnv tl (env.Add(varName, c))
             // To ensure all actions are working on the same register state
             // (primed register state)
             // We push all changes to a list, and merge the changes later.
@@ -134,7 +134,7 @@ module Interpreter =
 
             logger (sprintf "registerChanges: %A" registerChanges)
 
-            let newRegisterState = addInputVectorToEnv registerChanges oldRegisterState
+            let newRegisterState = addVectorToEnv registerChanges oldRegisterState
 
             logger (sprintf "newState: %A" newRegisterState)
             logger "----/Printing register state change -----"
