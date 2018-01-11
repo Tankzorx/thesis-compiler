@@ -114,10 +114,10 @@ module Interpreter =
                             inner tail
             inner actionL
 
-        let dpFunc (actionList: string list, oldRegisterState: Map<string, Const>) =
+        let dpFunc (actionList: string list, ctx: Map<string, Const>) =
             logger (sprintf "DP: executing %A" actionList)
             logger "----Printing register state change -----"
-            logger (sprintf "oldState: %A" oldRegisterState)
+            logger (sprintf "oldState: %A" ctx)
 
             let rec addVectorToEnv (input: (string * Const) list) (env: Map<string, Const>) =
                 match input with
@@ -129,12 +129,12 @@ module Interpreter =
             let registerChanges =
                 List.fold (fun acc actionName ->
                     let action = getActionByName actionName
-                    (intpAction (action, oldRegisterState))@acc
+                    (intpAction (action, ctx))@acc
                 ) [] actionList
 
             logger (sprintf "registerChanges: %A" registerChanges)
 
-            let newRegisterState = addVectorToEnv registerChanges oldRegisterState
+            let newRegisterState = addVectorToEnv registerChanges ctx
 
             logger (sprintf "newState: %A" newRegisterState)
             logger "----/Printing register state change -----"
@@ -145,10 +145,9 @@ module Interpreter =
 
     and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
         // Create oldCtx to use initial register values throughout.
-        let oldCtx = ctx
         let (Action (name, stmL)) = action
         List.fold (fun acc stm  ->
-            let (varName, value) = intpStm (stm, oldCtx)
+            let (varName, value) = intpStm (stm, ctx)
             (varName, value)::acc
         ) [] stmL
 
@@ -195,7 +194,7 @@ module Interpreter =
         logger (sprintf "Accessing: %s (%A)" s ctx.[s])
         ctx.[s]
 
-    let runner parsedModule startState (inputVector: (string * Const) list list) =
+    let exec parsedModule startState (inputVector: (string * Const) list list) =
         let (transitionSystem, startEnv) = intpModule parsedModule
 
         let mapToList map = Map.fold (fun foldState key value -> ((key, value)::foldState)) [] map

@@ -73,7 +73,7 @@ match ms with
             // [("cIn", B false); ("dpIn", N 3)];
             // [("cIn", B false); ("dpIn", N 3)];
         ]
-        let testRun = runner m "Idle" inputVector
+        let testRun = exec m "Idle" inputVector
 
         List.map (fun l -> printfn "%A\n" l) testRun
         
