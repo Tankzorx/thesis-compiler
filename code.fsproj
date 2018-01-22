@@ -10,6 +10,7 @@
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="util.fs" />
+    <Compile Include="typecheck.fs" />
     <Compile Include="ASTIntp.fs" />
   </ItemGroup>
   <ItemGroup>

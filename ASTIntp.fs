@@ -6,7 +6,7 @@ open Zorx.Frontend.AST
 
 module Interpreter =
 
-    type FsmNextStateResult =
+    type ControllerNextStateResult =
             | Success of string * string list * Stm list
             | Error of string
 
@@ -74,7 +74,7 @@ module Interpreter =
     // Output: next state, control signal(action list), csOut
     and intpController (controller: Controller) =
         let (Controller (decL, tL)) = controller
-        let controllerFunc (state: string, (inputVector: Map<string, Const>)): FsmNextStateResult =
+        let controllerFunc (state: string, (inputVector: Map<string, Const>)): ControllerNextStateResult =
 
             let validTransitions =
                 findTransitionsByStartState tL state |>
@@ -89,7 +89,7 @@ module Interpreter =
                 Error errMsg
             else
                 if validTransitions.Length > 1 then
-                    printfn "Multiple possible transitions. Picking first"
+                    logger "Multiple possible transitions. Picking first"
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
                 logger (sprintf "CTRL: transition %A->%A with %A" s1 s2 exp)
                 Success (s2, actions, [])
