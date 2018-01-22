@@ -84,13 +84,12 @@ module Interpreter =
                     v = B true
                 ) 
 
-            if validTransitions.Length > 1 then
-                let errMsg = (sprintf "Undeterministic automaton. Can pick between: %A" validTransitions)
-                Error errMsg
-            elif validTransitions.Length = 0 then
+            if validTransitions.Length = 0 then
                 let errMsg = sprintf "No transition at: %A" state
                 Error errMsg
             else
+                if validTransitions.Length > 1 then
+                    printfn "Multiple possible transitions. Picking first"
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
                 logger (sprintf "FSM: transition %A->%A with %A" s1 s2 exp)
                 Success (s2, actions, C (B false))
@@ -144,7 +143,6 @@ module Interpreter =
         dpFunc
 
     and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
-        // Create oldCtx to use initial register values throughout.
         let (Action (name, stmL)) = action
         List.fold (fun acc stm  ->
             let (varName, value) = intpStm (stm, ctx)
@@ -171,7 +169,7 @@ module Interpreter =
                             | Neq -> B (value1 <> value2)
                             | And -> B (value1 && value2)
                             | Or -> B (value1 || value2)
-                            | _  -> failwith (sprintf "Operator '%A' expects bool*bool, but got '%A'*'%A' " op v1 v2)
+                            | _  -> failwith (sprintf "Operator '%A' does not expect bool*bool, and got '%A'*'%A' " op v1 v2)
                     | N value1, N value2 ->
                         match op with
                             | Gt -> 
@@ -184,7 +182,7 @@ module Interpreter =
                             | Geq -> B (value1 >= value2)
                             | Plus -> N (value1 + value2)
                             | Minus -> N (value1 - value2)
-                            | _  -> failwith (sprintf "Operator '%A' expects int*int, but got '%A'*'%A' " op v1 v2)
+                            | _  -> failwith (sprintf "Operator '%A' does not expect int*int, and got: '%A'*'%A' " op v1 v2)
 
                     | _ -> failwith (sprintf "Operator: '%A' cannot be applied to '%A', '%A'" op v1 v2)
             | _ -> failwith (sprintf "NYI interpret for: '%A'" exp)

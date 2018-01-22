@@ -75,10 +75,43 @@ match ms with
         ]
         let testRun = exec m "Idle" inputVector
 
-        List.map (fun l -> printfn "%A\n" l) testRun
+        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
+        // Expr test
+        let ctx = Map.empty.Add("x", N 4)
+        let exp1 = C (N 4)
+        let exp2 = Access (AVar "x")
+        printfn "%A" (intpExp (BExp (exp1, Plus, exp2)) ctx)
 
-// intpExp 
-// let dpInVector = Map.empty.Add("dpIn", 3)
-// let findLargestFsmd: (string * Map<string, PrimTyp> -> int) = intpSpecification(ast)
-//parseFromFile "test/datapathTest.zorx"
+
+        // Action test
+        let ctx = Map.empty.Add("x", N 1).Add("y", B false)
+        let stm1 = Ass ("x", C (N 5))
+        let stm2 = Ass ("y", C (B true))
+        let stmList = [stm1; stm2]
+        let action = Action ("act1", stmList)
+        printfn "%A" (intpAction (action, ctx))
+        
+        // Dp test
+        // Construct some declarations
+        let dec1 = RegDec ("a", Reg, Integer)
+        let dec2 = RegDec ("b", InPort, Boolean)
+        let dec3 = RegDec ("c", OutPort, Integer)
+        let decls = [dec1; dec2; dec3]
+
+        // Construct some actions
+        let stm1 = Ass ("b", C (B false))
+        let stm2 = Ass ("a", C (N 6))
+        let stm3 = Ass ("c", BExp (C (N 4), Plus, (C (N 5))))
+        let act1 = Action ("act1", [stm1; stm2])
+        let act2 = Action ("act2", [stm3; stm2])
+
+        // Construct dp, and create dpFunc
+        let dp = Datapath (decls, [act1; act2])
+        let dpFunc = intpDp dp
+
+        // Construct context
+        let ctx = Map.empty.Add("a", N 1).Add("b", B true).Add("c", N 5)
+        printfn "%A" (dpFunc (["act1"; "act2"], ctx))
+
+
