@@ -7,7 +7,7 @@ open Zorx.Frontend.AST
 module Interpreter =
 
     type FsmNextStateResult =
-            | Success of string * string list * Exp
+            | Success of string * string list * Stm list
             | Error of string
 
     let findTransitionsByStartState tList state =
@@ -46,17 +46,17 @@ module Interpreter =
                 intpModule x
                 // printfn "%s" s
     and intpModule (fsmdModule: Module) = 
-        let (M (s, fsm, dp)) = fsmdModule
-        let (Fsm (fsmDecL, transL)) = fsm
+        let (M (s, ctrl, dp)) = fsmdModule
+        let (Controller (ctrlDecL, transL)) = ctrl
         let (Datapath (dpDecL, actL)) = dp
 
         // let actionNames = List.map (fun x -> x) actL
-        let fsmFunc = intpFsm fsm
+        let ctrlFunc = intpController ctrl
         let dpFunc = intpDp dp
-        let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls fsmDecL
+        let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
         let moduleFunc conf =
             let (state, ctx) = conf
-            let (newState, actionList, _) = match fsmFunc (state, ctx) with
+            let (newState, actionList, _) = match ctrlFunc (state, ctx) with
                                             | Success (a, b, c) -> (a, b, c)
                                             | Error s -> failwith s
             let (newCtx) = dpFunc (actionList, ctx)
@@ -72,8 +72,8 @@ module Interpreter =
 
     // Should return nextState function. input: state, cIn, ss
     // Output: next state, control signal(action list), csOut
-    and intpFsm (fsm: Fsm) =
-        let (Fsm (decL, tL)) = fsm
+    and intpController (controller: Controller) =
+        let (Controller (decL, tL)) = controller
         let controllerFunc (state: string, (inputVector: Map<string, Const>)): FsmNextStateResult =
 
             let validTransitions =
@@ -91,8 +91,8 @@ module Interpreter =
                 if validTransitions.Length > 1 then
                     printfn "Multiple possible transitions. Picking first"
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
-                logger (sprintf "FSM: transition %A->%A with %A" s1 s2 exp)
-                Success (s2, actions, C (B false))
+                logger (sprintf "CTRL: transition %A->%A with %A" s1 s2 exp)
+                Success (s2, actions, [])
         controllerFunc
     
     // Should return datapath function.

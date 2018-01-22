@@ -38,7 +38,7 @@ ModList:
 
 Module:
     // | MODULE NAME LCP DecL SEMICOLON StmtL RCP     { M($4, $6, []) }
-    | MODULE NAME LCP Datapath Fsm RCP     { M ($2, $5, $4) }
+    | MODULE NAME LCP Datapath Controller RCP     { M ($2, $5, $4) }
 
 DecL:
     |                               { [] }
@@ -80,9 +80,8 @@ Expr:
     | Expr MINUS Expr                { BExp($1,Minus,$3) }
     | NOT Expr                       { UExp($2, Not)}
 
-Fsm:
-    // | FSM LCP TransitionL RCP            { Fsm([], $3) }
-    | FSM LCP DecL SEMICOLON TransitionL RCP       { Fsm($3, $5) }
+Controller:
+    | FSM LCP DecL SEMICOLON TransitionL RCP       { Controller($3, $5) }
 
 ActionL:
     |                               { [] }

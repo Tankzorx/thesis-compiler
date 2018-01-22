@@ -53,8 +53,8 @@ module AST =
     type Transition =
         | T of string * Exp * string list * string
 
-    type Fsm =
-        | Fsm of Dec list * Transition list
+    type Controller =
+        | Controller of Dec list * Transition list
 
     type Datapath =
         | Datapath of Dec list * Action list
@@ -64,8 +64,7 @@ module AST =
 
 
     type Module = 
-        //| M of String * Dec list * Fsm // orig
-        M of String * Fsm * Datapath // test
+        M of String * Controller * Datapath // test
 
     type Specification = S of Module list
 
