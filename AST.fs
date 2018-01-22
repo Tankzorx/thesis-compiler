@@ -39,11 +39,9 @@ module AST =
         | InPort
         | OutPort
         | StatusSignal
-        | ControlSignal
         | Reg
     
     and PrimTyp =
-        | Any
         | Boolean
         | Integer
 

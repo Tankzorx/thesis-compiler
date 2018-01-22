@@ -17,7 +17,6 @@ let keyword s =
     | "true"         -> TRUE
     | "false"        -> FALSE
     | "status"       -> STATUSSIGNAL
-    | "control"      -> CONTROLSIGNAL
     | "if"           -> IF
     | "int"          -> INTEGER
     | "bool"         -> BOOLEAN

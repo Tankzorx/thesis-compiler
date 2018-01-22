@@ -7,10 +7,12 @@
 #load "Lexer.fs"
 #load "util.fs"
 #load "ASTIntp.fs"
+#load "typecheck.fs"
 
 // open Zorx.Frontend.AST
 open Zorx.Util
 open Zorx.Interpreter
+open Zorx.Typecheck
 open Zorx.Frontend.AST
 
 
@@ -113,5 +115,32 @@ match ms with
         // Construct context
         let ctx = Map.empty.Add("a", N 1).Add("b", B true).Add("c", N 5)
         printfn "%A" (dpFunc (["act1"; "act2"], ctx))
+
+
+
+        // TYPECHECKING
+        printfn "%A" (typeOfExp (C (N 4), []))
+
+        let dec1 = RegDec ("a", Reg, Integer)
+        let dec2 = RegDec ("b", InPort, Boolean)
+        let dec3 = RegDec ("c", OutPort, Integer)
+        let decls = [dec1; dec2; dec3]
+
+        let e1 = C (N 4)
+        let e2 = Access (AVar "a")
+        let e3 = BExp (e1, Plus, e2)
+
+        let stm1 = Ass ("a", C (N 6))
+        let stm2 = Ass ("b", C (B false))
+        let stm3 = Ass ("c", BExp (C (N 4), Plus, (C (N 5))))
+
+        printfn "%A" (tcExp (e3, decls))
+        printfn "%A" (tcStm (stm1, decls))
+
+        let act1 = Action ("act1", [stm1; stm2])
+        let act2 = Action ("act2", [stm3; stm2])
+
+        true
+        // printfn "%A" (tcAction act1)
 
 

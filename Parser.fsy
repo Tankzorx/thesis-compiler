@@ -5,7 +5,7 @@
 %start start
 %token <int> INT
 %token <string> NAME
-%token MODULE INPORT OUTPORT REG CONTROLSIGNAL STATUSSIGNAL FSM DATAPATH
+%token MODULE INPORT OUTPORT REG STATUSSIGNAL FSM DATAPATH
 %token LCP RCP LP RP LSP RSP EOF COMMA COLON SEMICOLON DASH ASSIGN
 %token PLUS MINUS
 %token NEQ EQ LEQ GEQ LT GT INTEGER BOOLEAN NOT
@@ -120,13 +120,11 @@ Dec:
     | NAME COLON PrimTyp Typ                { RegDec($1, $4, $3)}
 
 PrimTyp:
-    |                            { Any     }
     | INTEGER                    { Integer }
     | BOOLEAN                    { Boolean }
 
 Typ:
     | INPORT                     { InPort }
-    | CONTROLSIGNAL              { ControlSignal }
     | STATUSSIGNAL               { StatusSignal }
     | OUTPORT                    { OutPort }
     | REG                        { Reg }
