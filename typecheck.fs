@@ -1,14 +1,13 @@
 namespace Zorx
 
 
+open Zorx.ASTHelpers
 open Zorx.Frontend.AST
+open Zorx.Frontend
 open System
 
 module Typecheck =
 
-    type TcResult = 
-        | Success
-        | Error of string
     let logging = true
     let logger msg =
         if logging then
@@ -16,104 +15,222 @@ module Typecheck =
         else
             ()
 
-    let isSingleAssignment (stmL: Stm list): bool =
-        let LHOperands = List.map (
-                            fun stm -> 
-                            let (Ass (s, _)) = stm
-                            s
-                         ) stmL
-        let filteredLHOperands = Set.ofList LHOperands |> Set.toList
-        LHOperands.Length = filteredLHOperands.Length
+    // let isSingleAssignment (stmL: Stm list): bool =
+    //     let LHOperands = List.map (
+    //                         fun stm -> 
+    //                         let (Ass (s, _)) = stm
+    //                         s
+    //                      ) stmL
+    //     let filteredLHOperands = Set.ofList LHOperands |> Set.toList
+    //     LHOperands.Length = filteredLHOperands.Length
 
-    let getDecByName s decls: Dec =
-        List.find (fun dec ->
-            let (RegDec(name, t, ptyp)) = dec
-            name = s
-        ) decls
+    // let getDecByName s decls: Dec =
+    //     List.find (fun dec ->
+    //         let (RegDec(name, t, ptyp)) = dec
+    //         name = s
+    //     ) decls
 
-    let getActionByName actionName dp =
-        let (Datapath (_, actionL)) = dp 
-        let rec inner actionLs =
-            match actionLs with
-                | [] -> failwith (sprintf "No action matched the requested action: %A" actionName)
-                | a::tail ->
-                    let (Action (name, stms)) = a
-                    if name = actionName then
-                        a
-                    else
-                        inner tail
-        inner actionL
+    // let getActionByName actionName dp =
+    //     let (Datapath (_, actionL)) = dp 
+    //     let rec inner actionLs =
+    //         match actionLs with
+    //             | [] -> failwith (sprintf "No action matched the requested action: %A" actionName)
+    //             | a::tail ->
+    //                 let (Action (name, stms)) = a
+    //                 if name = actionName then
+    //                     a
+    //                 else
+    //                     inner tail
+    //     inner actionL
 
-    let rec typeOfExp (exp: Exp, decls: Dec list): PrimTyp =
-        match exp with
-            | C (N _) -> Integer
-            | C (B _) -> PrimTyp.Boolean
-            | Access (AVar s) ->
-                let (RegDec (name, t, ptyp)) = getDecByName s decls
-                ptyp
-            | BExp (e1, op, e2) ->
-                let ptyp1 = typeOfExp (e1, decls)
-                let ptyp2 = typeOfExp (e2, decls)
-                match op with
-                    | Gt -> PrimTyp.Boolean
-                    | Lt -> PrimTyp.Boolean
-                    | Leq -> PrimTyp.Boolean
-                    | Geq -> PrimTyp.Boolean
-                    | Eq -> ptyp1
-                    | Plus -> Integer
-                    | Minus -> Integer
-                    | And -> PrimTyp.Boolean
-                    | Or -> PrimTyp.Boolean
-            | UExp (e1, op) ->
-                match op with
-                    | Not -> PrimTyp.Boolean
+    // let rec typeOfExp (exp: Exp, decls: Dec list): PrimTyp =
+    //     match exp with
+    //         | C (N _) -> Integer
+    //         | C (B _) -> PrimTyp.Boolean
+    //         | Access (AVar s) ->
+    //             let (RegDec (name, t, ptyp)) = getDecByName s decls
+    //             ptyp
+    //         | BExp (e1, op, e2) ->
+    //             let ptyp1 = typeOfExp (e1, decls)
+    //             let ptyp2 = typeOfExp (e2, decls)
+    //             match op with
+    //                 | Gt -> PrimTyp.Boolean
+    //                 | Lt -> PrimTyp.Boolean
+    //                 | Leq -> PrimTyp.Boolean
+    //                 | Geq -> PrimTyp.Boolean
+    //                 | Eq -> ptyp1
+    //                 | Plus -> Integer
+    //                 | Minus -> Integer
+    //                 | And -> PrimTyp.Boolean
+    //                 | Or -> PrimTyp.Boolean
+    //         | UExp (_, op) ->
+    //             match op with
+    //                 | Not -> PrimTyp.Boolean
+
+    // Checks:
+    // - No duplicate decls in dp status signals and controller decls.
+    // - valid controller+dp
+    let rec tcModule ((M (s, ctrl, dp))): bool =
+
+        let (Controller (ctrlDecls, _)) = ctrl
+        let (Datapath (dpDecls, _)) = dp
+
+        // Ensure that there are no status signals that has the same name
+        // as controller input/output
+        let checkDuplicateDecls =
+            List.filter (fun (RegDec (_, t, _)) -> t = StatusSignal) dpDecls |>
+            List.fold (fun acc (RegDec (dpDecName, _, _)) ->
+                let duplicateExists =
+                    List.exists (
+                        fun (RegDec (ctrlDecName, _, _)) -> ctrlDecName = dpDecName) ctrlDecls
+                    
+                acc &&
+                (not duplicateExists)
+            ) true 
+
+        checkDuplicateDecls &&
+        tcController (ctrl, dp) &&
+        tcDatapath (dp)
 
     // Checks:
     // - No status signal decls
     // - No reg decls
-    // - No actions that aren't declared?
-    // - Requested actions must be single assignment programs
+    // - No actions that aren't declared
+    // - All transitions must pass type check
+    and tcController (controller: Controller, dp: Datapath): bool =
+        let (Controller (ctrlDecls, transitions)) = controller
+        let (Datapath (dpDecls, actions)) = dp
+
+        // There should be no status signal decls.
+        let checkStatusDecls =
+            List.fold (fun acc dec -> 
+                let (RegDec (_, typ, _)) = dec
+                if typ = StatusSignal || typ = Reg then
+                    logger (sprintf "Variables of type '%A' is not allowed in the controller" typ)
+                typ <> StatusSignal &&
+                typ <> Reg
+            ) true ctrlDecls
+
+        // First fold to get a list of actionNames used in the transitions,
+        // then fold to ensure that every used action is mentioned in the datapath.
+        let actionsDeclared =
+            List.fold (fun acc (T (_, _, actionNames, _) as t) ->
+                acc &&
+                List.fold (
+                    fun acc actionName ->
+                        let actionDeclared = List.exists (fun (Action (s, _)) -> s = actionName) actions
+                        if not actionDeclared then
+                            logger (sprintf "The action '%A' is used in %A but not declared in the datapath" actionName t)
+                        acc && actionDeclared
+                ) true actionNames
+            ) true transitions
+
+        if checkStatusDecls && actionsDeclared then
+            List.fold (fun acc t -> acc && tcTransition (t, dp, controller)) true transitions
+        else
+            false
+
+    // Checks:
+    // - All actions must be single assignment
     // - All variables used must be declared
-    let rec tcController (controller: Controller, dp: Datapath): bool =
-        failwith "NYI: tcController"
-
     and tcDatapath (datapath: Datapath): bool =
-        // Checks:
-        // - All actions must be single assignment
-        // - All variables used must be declared
-        failwith "NYI: tcDatapath"
+        let (Datapath (decls, actions)) = datapath
+        
+        let tcActionsResult = 
+            List.fold (fun acc action -> acc && (tcAction (action, decls))) true actions
 
-    and tcTransition (transition: Transition, dp: Datapath): bool =
+        tcActionsResult
+
+    and tcTransition (transition: Transition, dp: Datapath, controller: Controller): bool =
         // Checks:
         // - That the actions executed are single assignment
-        // -
+        // - That the guard is properly typed
         let (T (s, guard, actionNames, s')) = transition
-        // let combinedStmL = 
-        failwith "NYI: tcTransition"
+        let (Datapath (dpDecls, _)) = dp
+        let (Controller (ctrlDecls, _)) = controller
 
+        // The guard expression should be evaluated with all the controllers
+        // variables, and the status signals of the dp.
+        let guardContext =
+            ctrlDecls @
+            List.filter (fun dec ->
+                match dec with
+                    | RegDec (_, StatusSignal, _) -> true
+                    | _ -> false
+            ) dpDecls
+        let tcGuardResult = tcExp (guard, guardContext)
+        if not tcGuardResult then
+            logger (sprintf "Typecheck of '%A' in transtion '%A' failed." guard transition)
+
+
+        // Reuse tcAction by constructing an auxilliary action
+        // consisting of all statements from the actions to be
+        // executed.
+        let combinedStmL =
+            List.fold (
+                fun acc actionName ->
+                    let (Action (_, stmL)) = getActionByName actionName dp
+                    (stmL)@acc
+            ) [] actionNames
+        let tcActionResult = tcAction (Action ("", combinedStmL), dpDecls)
+        if not tcActionResult then
+            logger (sprintf "The actions of '%A [..](%A)> %A' is failing the typecheck." s actionNames s')
+
+        tcActionResult && tcGuardResult
+        
+
+    // Checks:
+    // - Must be single assignment
+    // - All statements must pass type check.
     // Annoying name collision with some built in type called Action
-    and tcAction (action: Zorx.Frontend.AST.Action, decls: Dec list): bool =
-        let (Action (name, stmL)) = action
+    and tcAction (action: AST.Action, decls: Dec list): bool =
+        let (Action (_, stmL)) = action
         // The stmList must be single assignment
+        if not (isSingleAssignment stmL) then
+            logger (sprintf "The statement list '%A' assigns variables multiple times." stmL)
         isSingleAssignment stmL &&
         // Type check all statements individually
         List.fold (fun acc stm -> acc && (tcStm (stm, decls))) true stmL
 
 
+    // Checks:
+    // - Check that lHand is present in decls
+    // - Check that type of statement is equal that of the expression.
     and tcStm (stm: Stm, decls: Dec list): bool =
-        // Checks:
-        //  - Check that type of statement is equal that of the expression.
         let (Ass (lHand, e)) = stm
-        let (RegDec (_, _, ptyp)) = getDecByName lHand decls
-        let eptyp = typeOfExp (e, decls)
-        if eptyp <> ptyp then
-            logger (sprintf "Type conflict: declared type %A not equal to actual %A at %A" ptyp eptyp stm)
-        eptyp = ptyp
+
+        let lHandDeclared =
+            List.exists (fun dec -> 
+                let (RegDec (name, t, ptyp)) = dec
+                name = lHand
+            ) decls
+
+        if not lHandDeclared then
+            logger (sprintf "Variable %A is not declared in '%A'" lHand stm)
+            false
+        else
+            let (RegDec (_, _, ptyp)) = getDecByName lHand decls
+            let tcExpResult = tcExp (e, decls)
+            if tcExpResult then
+                let eptyp = typeOfExp (e, decls)
+                if eptyp <> ptyp then
+                    logger (sprintf "Type conflict: declared type %A not equal to actual type %A at %A" ptyp eptyp stm)
+                eptyp = ptyp
+            else 
+                false
 
     and tcExp (exp: Exp, decls: Dec list): bool =
         match exp with
             | C _ -> true
-            | Access _ -> true
+            | Access (AVar s) ->
+                let isDeclared =
+                    List.exists (fun dec -> 
+                        let (RegDec (varName, _, _)) = dec
+                        varName = s
+                    ) decls
+                if not isDeclared then
+                    logger (sprintf "Variable %A is not declared in %A" s decls)
+                isDeclared
             | BExp (e1, op, e2) ->
                 let ptyp1 = typeOfExp (e1, decls)
                 let ptyp2 = typeOfExp (e2, decls)

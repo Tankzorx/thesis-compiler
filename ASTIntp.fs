@@ -185,7 +185,6 @@ module Interpreter =
                             | _  -> failwith (sprintf "Operator '%A' does not expect int*int, and got: '%A'*'%A' " op v1 v2)
 
                     | _ -> failwith (sprintf "Operator: '%A' cannot be applied to '%A', '%A'" op v1 v2)
-            | _ -> failwith (sprintf "NYI interpret for: '%A'" exp)
 
     and intpAccess (access: Access) (ctx: Map<string, Const>) =
         let (AVar s) = access

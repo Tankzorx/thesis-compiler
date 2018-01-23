@@ -3,6 +3,7 @@
 #r @"bin/Debug/FSharp.PowerPack.dll";;
 
 #load "AST.fs"
+#load "ASTHelpers.fs"
 #load "Parser.fs"
 #load "Lexer.fs"
 #load "util.fs"
@@ -14,6 +15,7 @@ open Zorx.Util
 open Zorx.Interpreter
 open Zorx.Typecheck
 open Zorx.Frontend.AST
+open Zorx.ASTHelpers
 
 
 let ast = parseFromFile "test/findLargest.zorx"
@@ -140,7 +142,17 @@ match ms with
         let act1 = Action ("act1", [stm1; stm2])
         let act2 = Action ("act2", [stm3; stm2])
 
-        true
         // printfn "%A" (tcAction act1)
+
+        let (S (mlist)) = parseFromFile "test/typecheckTransition.zorx"
+        printfn "%A" mlist
+        let (M (_, controller, dp)) = mlist.Head
+        let (Controller (decls, transitions)) = controller
+
+        // List.map (fun t -> tcTransition (t, dp, controller)) transitions |> ignore
+
+
+        printfn "dp tc: %A" (tcDatapath dp)
+        printfn "ctrl tc: %A" (tcController (controller, dp))
 
 

@@ -1,0 +1,23 @@
+module testModule {
+    datapath {
+        b: int status,
+        a: int reg,
+        d: bool in;
+        action1 {
+            d := true;
+        },
+        action2 {
+            a := 2;
+            b := 5;
+        },
+        action3 {
+            d := false;
+        }
+    }
+    controller {
+        b: int in;
+        s1 [b](action1)> s2,
+        s2 [true](action1, action2)> s3,
+        s3 [true && true](action3, action2)> s4
+    }
+}
