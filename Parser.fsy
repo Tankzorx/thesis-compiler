@@ -1,5 +1,9 @@
 %{
    open Zorx.Frontend.AST
+   open Zorx
+
+   let loggingEnabled = false
+   let logger msg = Zorx.Logging.logger loggingEnabled msg
 %}
 
 %start start
@@ -92,7 +96,7 @@ ActionList:
     | Action COMMA ActionList       { $1 :: $3 }
 
 Action:
-    | NAME LCP StmtL RCP             { printfn "Parsed Action"; Action($1, $3) }
+    | NAME LCP StmtL RCP             { logger "Parsed Action"; Action($1, $3) }
     
 Datapath:
     | DATAPATH LCP DecL SEMICOLON ActionL RCP      { Datapath($3, $5)}

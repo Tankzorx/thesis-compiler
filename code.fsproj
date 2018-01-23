@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ZorxLogger.fs" />
     <Compile Include="AST.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />

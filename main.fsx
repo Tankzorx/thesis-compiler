@@ -2,6 +2,7 @@
 
 #r @"bin/Debug/FSharp.PowerPack.dll";;
 
+#load "ZorxLogger.fs"
 #load "AST.fs"
 #load "ASTHelpers.fs"
 #load "Parser.fs"
@@ -19,7 +20,7 @@ open Zorx.ASTHelpers
 
 
 let ast = parseFromFile "test/findLargest.zorx"
-printfn "%A" ast
+// printfn "%A" ast
 let (S ms) = ast
 match ms with
     | [] -> failwith "Empty fsmd"
@@ -79,13 +80,13 @@ match ms with
         ]
         let testRun = exec m "Idle" inputVector
 
-        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
+        // List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
         // Expr test
         let ctx = Map.empty.Add("x", N 4)
         let exp1 = C (N 4)
         let exp2 = Access (AVar "x")
-        printfn "%A" (intpExp (BExp (exp1, Plus, exp2)) ctx)
+        // printfn "%A" (intpExp (BExp (exp1, Plus, exp2)) ctx)
 
 
         // Action test
@@ -94,7 +95,7 @@ match ms with
         let stm2 = Ass ("y", C (B true))
         let stmList = [stm1; stm2]
         let action = Action ("act1", stmList)
-        printfn "%A" (intpAction (action, ctx))
+        // printfn "%A" (intpAction (action, ctx))
         
         // Dp test
         // Construct some declarations
@@ -116,12 +117,12 @@ match ms with
 
         // Construct context
         let ctx = Map.empty.Add("a", N 1).Add("b", B true).Add("c", N 5)
-        printfn "%A" (dpFunc (["act1"; "act2"], ctx))
+        // printfn "%A" (dpFunc (["act1"; "act2"], ctx))
 
 
 
         // TYPECHECKING
-        printfn "%A" (typeOfExp (C (N 4), []))
+        // printfn "%A" (typeOfExp (C (N 4), []))
 
         let dec1 = RegDec ("a", Reg, Integer)
         let dec2 = RegDec ("b", InPort, Boolean)
@@ -136,8 +137,8 @@ match ms with
         let stm2 = Ass ("b", C (B false))
         let stm3 = Ass ("c", BExp (C (N 4), Plus, (C (N 5))))
 
-        printfn "%A" (tcExp (e3, decls))
-        printfn "%A" (tcStm (stm1, decls))
+        // printfn "%A" (tcExp (e3, decls))
+        // printfn "%A" (tcStm (stm1, decls))
 
         let act1 = Action ("act1", [stm1; stm2])
         let act2 = Action ("act2", [stm3; stm2])
@@ -145,7 +146,7 @@ match ms with
         // printfn "%A" (tcAction act1)
 
         let (S (mlist)) = parseFromFile "test/typecheckTransition.zorx"
-        printfn "%A" mlist
+        // printfn "%A" mlist
         let (M (_, controller, dp)) = mlist.Head
         let (Controller (decls, transitions)) = controller
 

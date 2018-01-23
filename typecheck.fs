@@ -4,21 +4,16 @@ namespace Zorx
 open Zorx.ASTHelpers
 open Zorx.Frontend.AST
 open Zorx.Frontend
-open System
 
 module Typecheck =
 
-    let logging = true
-    let logger msg =
-        if logging then
-            printfn "%A" msg
-        else
-            ()
+    let loggingEnabled = true
+    let logger msg = Zorx.Logging.logger loggingEnabled msg
 
     // Checks:
     // - No duplicate decls in dp status signals and controller decls.
     // - valid controller+dp
-    let rec tcModule ((M (s, ctrl, dp))): bool =
+    let rec tcModule ((M (_, ctrl, dp))): bool =
 
         let (Controller (ctrlDecls, _)) = ctrl
         let (Datapath (dpDecls, _)) = dp
@@ -47,7 +42,7 @@ module Typecheck =
     // - All transitions must pass type check
     and tcController (controller: Controller, dp: Datapath): bool =
         let (Controller (ctrlDecls, transitions)) = controller
-        let (Datapath (dpDecls, actions)) = dp
+        let (Datapath (_, actions)) = dp
 
         // There should be no status signal decls.
         let checkStatusDecls =
@@ -55,6 +50,7 @@ module Typecheck =
                 let (RegDec (_, typ, _)) = dec
                 if typ = StatusSignal || typ = Reg then
                     logger (sprintf "Variables of type '%A' is not allowed in the controller" typ)
+                acc &&
                 typ <> StatusSignal &&
                 typ <> Reg
             ) true ctrlDecls
@@ -149,7 +145,7 @@ module Typecheck =
 
         let lHandDeclared =
             List.exists (fun dec -> 
-                let (RegDec (name, t, ptyp)) = dec
+                let (RegDec (name, _, _)) = dec
                 name = lHand
             ) decls
 

@@ -2,23 +2,21 @@ namespace Zorx
 
 
 open Zorx.Frontend.AST
-open Zorx.Frontend
-open System
 
 module ASTHelpers =
 
     let isSingleAssignment (stmL: Stm list): bool =
-        let LHOperands = List.map (
+        let lhOperands = List.map (
                             fun stm -> 
                             let (Ass (s, _)) = stm
                             s
                          ) stmL
-        let filteredLHOperands = Set.ofList LHOperands |> Set.toList
-        LHOperands.Length = filteredLHOperands.Length
+        let filteredLHOperands = Set.ofList lhOperands |> Set.toList
+        lhOperands.Length = filteredLHOperands.Length
 
     let getDecByName s decls: Dec =
         List.find (fun dec ->
-            let (RegDec(name, t, ptyp)) = dec
+            let (RegDec(name, _, _)) = dec
             name = s
         ) decls
 
@@ -30,7 +28,7 @@ module ASTHelpers =
             match actionLs with
                 | [] -> failwith (sprintf "No action matched the requested action: %A" actionName)
                 | a::tail ->
-                    let (Action (name, stms)) = a
+                    let (Action (name, _)) = a
                     if name = actionName then
                         a
                     else

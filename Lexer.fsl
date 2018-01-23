@@ -4,7 +4,12 @@ open System
 open System.Text
 open System.Text.RegularExpressions
 open Parser
+open Zorx
 open Microsoft.FSharp.Text.Lexing
+
+let loggingEnabled = false
+let lexerLogger msg = 
+  Zorx.Logging.logger loggingEnabled msg
 
 let keyword s =
     match s with
@@ -43,32 +48,32 @@ rule tokenize = parse
     tokenize lexbuf 
   }
   | comment     { 
-    printfn "Read comment: %s " Encoding.UTF8.GetString(lexbuf.Lexeme)
+    lexerLogger (sprintf "Read comment: %s " Encoding.UTF8.GetString(lexbuf.Lexeme))
     lexbuf.EndPos <- lexbuf.EndPos.NextLine;
     tokenize lexbuf
    }
-  | int         { printfn "Lexer read int"; INT<| Int32.Parse(Encoding.UTF8.GetString(lexbuf.Lexeme)) }
-  | "("         { printfn "Lexer read LP"; LP }
-  | ")"         { printfn "Lexer read LP"; RP }
-  | "{"         { printfn "Lexer read LCP"; LCP }
-  | "}"         { printfn "Lexer read RCP"; RCP }
+  | int         { lexerLogger "Lexer read int"; INT<| Int32.Parse(Encoding.UTF8.GetString(lexbuf.Lexeme)) }
+  | "("         { lexerLogger "Lexer read LP"; LP }
+  | ")"         { lexerLogger "Lexer read LP"; RP }
+  | "{"         { lexerLogger "Lexer read LCP"; LCP }
+  | "}"         { lexerLogger "Lexer read RCP"; RCP }
   | "["         { LSP }
   | "]"         { RSP }
-  | ","         { printfn "Lexer read COMMA"; COMMA }
-  | ":"         { printfn "Lexer read COLON"; COLON }
+  | ","         { lexerLogger "Lexer read COMMA"; COMMA }
+  | ":"         { lexerLogger "Lexer read COLON"; COLON }
   | "!="        { NEQ }
   | "=="        { EQ }
   | "&&"        { AND }
   | "!"         { NOT }
   | "||"        { OR }
   | ":="        { ASSIGN }
-  | ">"         { printfn "Lexer read GEQ"; GT }
-  | "<"         { printfn "Lexer read LEQ"; LT }
-  | "-"         { printfn "Lexer read MINUS"; MINUS }
-  | "+"         { printfn "Lexer read PLUS"; PLUS }
-  | ";"         { printfn "Lexer read SEMICOLON"; SEMICOLON }
+  | ">"         { lexerLogger "Lexer read GEQ"; GT }
+  | "<"         { lexerLogger "Lexer read LEQ"; LT }
+  | "-"         { lexerLogger "Lexer read MINUS"; MINUS }
+  | "+"         { lexerLogger "Lexer read PLUS"; PLUS }
+  | ";"         { lexerLogger "Lexer read SEMICOLON"; SEMICOLON }
   // | comment     { tokenize lexbuf }
-  | identifier  { printfn "Lexer read keyword:  %A" keyword(Encoding.UTF8.GetString(lexbuf.Lexeme))
+  | identifier  { lexerLogger (sprintf "Lexer read keyword:  %A" keyword(Encoding.UTF8.GetString(lexbuf.Lexeme)))
                   keyword(Encoding.UTF8.GetString(lexbuf.Lexeme)) }
-  | eof         { printfn "Lexer read eof"; EOF }
+  | eof         { lexerLogger "Lexer read eof"; EOF }
 

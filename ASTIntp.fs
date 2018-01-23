@@ -3,7 +3,6 @@ namespace Zorx
 
 open Zorx.Frontend.AST
 
-
 module Interpreter =
 
     type ControllerNextStateResult =
@@ -16,13 +15,9 @@ module Interpreter =
             stateName = state
         ) tList
 
-    let logging = true
+    let loggingEnabled = false
 
-    let logger msg =
-        if logging then
-            printfn "%A" msg
-        else
-            ()
+    let logger msg = Zorx.Logging.logger loggingEnabled msg
 
     let initVarEnvFromDecls decls (ctx: Map<string, Const>) =
         let rec innerF decls (ctx: Map<string, Const>) =
@@ -41,14 +36,14 @@ module Interpreter =
         let ( S modules) = ast
         match modules with
             | [] -> failwith "empty fsmd"
-            | (x::xs) ->
+            | (x::_) ->
                 // printfn "%A" x
                 intpModule x
                 // printfn "%s" s
     and intpModule (fsmdModule: Module) = 
-        let (M (s, ctrl, dp)) = fsmdModule
-        let (Controller (ctrlDecL, transL)) = ctrl
-        let (Datapath (dpDecL, actL)) = dp
+        let (M (_, ctrl, dp)) = fsmdModule
+        let (Controller (ctrlDecL, _)) = ctrl
+        let (Datapath (dpDecL, _)) = dp
 
         // let actionNames = List.map (fun x -> x) actL
         let ctrlFunc = intpController ctrl
@@ -73,13 +68,13 @@ module Interpreter =
     // Should return nextState function. input: state, cIn, ss
     // Output: next state, control signal(action list), csOut
     and intpController (controller: Controller) =
-        let (Controller (decL, tL)) = controller
+        let (Controller (_, tL)) = controller
         let controllerFunc (state: string, (inputVector: Map<string, Const>)): ControllerNextStateResult =
 
             let validTransitions =
                 findTransitionsByStartState tL state |>
                 List.filter (fun t -> 
-                    let (T (s1, exp, actions, s2)) = t
+                    let (T (_, exp, _, _)) = t
                     let v = intpExp exp inputVector
                     v = B true
                 ) 
@@ -100,13 +95,13 @@ module Interpreter =
     // input: actionList, dpInput, ctx/registerState
     // output: status signals, new register state, dpOut
     and intpDp (dp: Datapath) =
-        let (Datapath (decL, actionL)) = dp
+        let (Datapath (_, actionL)) = dp
         let getActionByName actionName = 
             let rec inner actionLs =
                 match actionLs with
                     | [] -> failwith (sprintf "No action matched the requested action: %A" actionName)
                     | a::tail ->
-                        let (Action (name, stms)) = a
+                        let (Action (name, _)) = a
                         if name = actionName then
                             a
                         else
@@ -143,7 +138,7 @@ module Interpreter =
         dpFunc
 
     and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
-        let (Action (name, stmL)) = action
+        let (Action (_, stmL)) = action
         List.fold (fun acc stm  ->
             let (varName, value) = intpStm (stm, ctx)
             (varName, value)::acc
