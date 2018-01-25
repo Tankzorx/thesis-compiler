@@ -16,11 +16,12 @@ module Interpreter =
         ) tList
 
     let loggingEnabled = false
-
     let logger msg = Zorx.Logging.logger loggingEnabled msg
 
-    let initVarEnvFromDecls decls (ctx: Map<string, Const>) =
-        let rec innerF decls (ctx: Map<string, Const>) =
+    type VarEnv = Map<string, Const>
+
+    let initVarEnvFromDecls decls (ctx: VarEnv) =
+        let rec innerF decls (ctx: VarEnv) =
             match decls with
                 | [] -> ctx
                 | dec::tail ->
@@ -31,7 +32,7 @@ module Interpreter =
                             innerF tail (ctx.Add(varName, N 0))
         innerF decls ctx
 
-    
+
     let rec intpSpecification (ast: Specification) =
         let ( S modules) = ast
         match modules with
@@ -59,7 +60,7 @@ module Interpreter =
 
         (moduleFunc, startEnv)
     
-    and intpStm (stm: Stm, ctx: Map<string, Const>)  =
+    and intpStm (stm: Stm, ctx: VarEnv)  =
         let (Ass (lval, exp)) = stm
         let value = intpExp exp ctx
         logger (sprintf "Assigning: %A := %A" lval value)
@@ -108,12 +109,12 @@ module Interpreter =
                             inner tail
             inner actionL
 
-        let dpFunc (actionList: string list, ctx: Map<string, Const>) =
+        let dpFunc (actionList: string list, ctx: VarEnv) =
             logger (sprintf "DP: executing %A" actionList)
             logger "----Printing register state change -----"
             logger (sprintf "oldState: %A" ctx)
 
-            let rec addVectorToEnv (input: (string * Const) list) (env: Map<string, Const>) =
+            let rec addVectorToEnv (input: (string * Const) list) (env: VarEnv) =
                 match input with
                     | [] -> env
                     | (varName, c)::tl -> addVectorToEnv tl (env.Add(varName, c))
@@ -137,7 +138,7 @@ module Interpreter =
 
         dpFunc
 
-    and intpAction (action: Action, ctx: Map<string, Const>): (string * Const) list =
+    and intpAction (action: Action, ctx: VarEnv): (string * Const) list =
         let (Action (_, stmL)) = action
         List.fold (fun acc stm  ->
             let (varName, value) = intpStm (stm, ctx)
@@ -181,7 +182,7 @@ module Interpreter =
 
                     | _ -> failwith (sprintf "Operator: '%A' cannot be applied to '%A', '%A'" op v1 v2)
 
-    and intpAccess (access: Access) (ctx: Map<string, Const>) =
+    and intpAccess (access: Access) (ctx: VarEnv) =
         let (AVar s) = access
         logger (sprintf "Accessing: %s (%A)" s ctx.[s])
         ctx.[s]
@@ -191,12 +192,12 @@ module Interpreter =
 
         let mapToList map = Map.fold (fun foldState key value -> ((key, value)::foldState)) [] map
 
-        let rec addInputVectorToEnv input (env: Map<string, Const>) =
+        let rec addInputVectorToEnv input (env: VarEnv) =
             match input with
                 | [] -> env
                 | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
 
-        let rec inner state (env: Map<string, Const>) inputVector (runVector: (string * Const) list list) =
+        let rec inner state (env: VarEnv) inputVector (runVector: (string * Const) list list) =
             match inputVector with
                 | [] -> List.rev runVector
                 | cycleInput::rest ->

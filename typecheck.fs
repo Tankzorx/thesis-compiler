@@ -13,6 +13,8 @@ module Typecheck =
     // Checks:
     // - No duplicate decls in dp status signals and controller decls.
     // - valid controller+dp
+
+    type TypeEnv = Dec list
     let rec tcModule ((M (_, ctrl, dp))): bool =
 
         let (Controller (ctrlDecls, _)) = ctrl
@@ -127,7 +129,7 @@ module Typecheck =
     // - Must be single assignment
     // - All statements must pass type check.
     // Annoying name collision with some built in type called Action
-    and tcAction (action: AST.Action, decls: Dec list): bool =
+    and tcAction (action: AST.Action, decls: TypeEnv): bool =
         let (Action (_, stmL)) = action
         // The stmList must be single assignment
         if not (isSingleAssignment stmL) then
@@ -140,7 +142,8 @@ module Typecheck =
     // Checks:
     // - Check that lHand is present in decls
     // - Check that type of statement is equal that of the expression.
-    and tcStm (stm: Stm, decls: Dec list): bool =
+    // - Check that output variables are not used in expressions.
+    and tcStm (stm: Stm, decls: TypeEnv): bool =
         let (Ass (lHand, e)) = stm
 
         let lHandDeclared =
@@ -163,7 +166,10 @@ module Typecheck =
             else 
                 false
 
-    and tcExp (exp: Exp, decls: Dec list): bool =
+    // Checks:
+    // - OutPorts can't be used in expressions.
+    // - .. More obvious stuff.
+    and tcExp (exp: Exp, decls: TypeEnv): bool =
         match exp with
             | C _ -> true
             | Access (AVar s) ->
@@ -174,28 +180,46 @@ module Typecheck =
                     ) decls
                 if not isDeclared then
                     logger (sprintf "Variable %A is not declared in %A" s decls)
-                isDeclared
+
+                if isDeclared then
+                    let (Dec (_, typ,_)) = 
+                        List.find (fun dec -> 
+                            let (Dec (varName, _, _)) = dec
+                            varName = s
+                        ) decls
+                    let isOutPort = typ = OutPort
+                    if isOutPort then
+                        logger (sprintf "The variable %A, is an OutPor, and therefore can't be used in an expression." exp)
+                    not isOutPort
+                else
+                    false
             | BExp (e1, op, e2) ->
-                let ptyp1 = typeOfExp (e1, decls)
-                let ptyp2 = typeOfExp (e2, decls)
-                if ptyp1 <> ptyp2 then
-                    logger (sprintf "ptyp1 <> ptyp2: %A" exp)
-                ptyp1 = ptyp2 &&
-                match op with
-                    | Gt -> ptyp1 = Integer
-                    | Lt -> ptyp1 = Integer
-                    | Leq -> ptyp1 = Integer
-                    | Geq -> ptyp1 = Integer
-                    | Plus -> ptyp1 = Integer
-                    | Minus -> ptyp1 = Integer
-                    | And -> ptyp1 = PrimTyp.Boolean
-                    | Or -> ptyp1 = PrimTyp.Boolean
-                    | Neq -> true
-                    | Eq -> true
+                if tcExp (e1, decls) && tcExp(e2, decls) then
+                    let ptyp1 = typeOfExp (e1, decls)
+                    let ptyp2 = typeOfExp (e2, decls)
+                    if ptyp1 <> ptyp2 then
+                        logger (sprintf "ptyp1 <> ptyp2: %A" exp)
+                    ptyp1 = ptyp2 &&
+                    match op with
+                        | Gt -> ptyp1 = Integer
+                        | Lt -> ptyp1 = Integer
+                        | Leq -> ptyp1 = Integer
+                        | Geq -> ptyp1 = Integer
+                        | Plus -> ptyp1 = Integer
+                        | Minus -> ptyp1 = Integer
+                        | And -> ptyp1 = PrimTyp.Boolean
+                        | Or -> ptyp1 = PrimTyp.Boolean
+                        | Neq -> true
+                        | Eq -> true
+                else
+                    false
             | UExp (e, op) ->
-                let ptyp = typeOfExp (e, decls)
-                match op with
-                    | Not -> ptyp = PrimTyp.Boolean
+                if tcExp (e, decls) then
+                    let ptyp = typeOfExp (e, decls)
+                    match op with
+                        | Not -> ptyp = PrimTyp.Boolean
+                else
+                    false
 
 
     
