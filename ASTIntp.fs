@@ -6,7 +6,7 @@ open Zorx.Frontend.AST
 module Interpreter =
 
     type ControllerNextStateResult =
-            | Success of string * string list * Stm list
+            | Success of string * string list
             | Error of string
 
     let findTransitionsByStartState tList state =
@@ -52,8 +52,8 @@ module Interpreter =
         let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
         let moduleFunc conf =
             let (state, ctx) = conf
-            let (newState, actionList, _) = match ctrlFunc (state, ctx) with
-                                            | Success (a, b, c) -> (a, b, c)
+            let (newState, actionList) = match ctrlFunc (state, ctx) with
+                                            | Success (a, b) -> (a, b)
                                             | Error s -> failwith s
             let (newCtx) = dpFunc (actionList, ctx)
             (newState, newCtx)
@@ -70,7 +70,7 @@ module Interpreter =
     // Output: next state, control signal(action list), csOut
     and intpController (controller: Controller) =
         let (Controller (_, tL)) = controller
-        let controllerFunc (state: string, (inputVector: Map<string, Const>)): ControllerNextStateResult =
+        let controllerFunc (state: string, inputVector: VarEnv): ControllerNextStateResult =
 
             let validTransitions =
                 findTransitionsByStartState tL state |>
@@ -88,7 +88,7 @@ module Interpreter =
                     logger "Multiple possible transitions. Picking first"
                 let (T (s1, exp, actions, s2)) = validTransitions.Head
                 logger (sprintf "CTRL: transition %A->%A with %A" s1 s2 exp)
-                Success (s2, actions, [])
+                Success (s2, actions)
         controllerFunc
     
     // Should return datapath function.

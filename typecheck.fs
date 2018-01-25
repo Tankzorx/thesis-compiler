@@ -155,9 +155,12 @@ module Typecheck =
             logger (sprintf "Variable %A is not declared in '%A'" lHand stm)
             false
         else
-            let (Dec (_, _, ptyp)) = getDecByName lHand decls
+            let (Dec (_, typ, ptyp)) = getDecByName lHand decls
+            let isInPort = typ = InPort
+            if isInPort then
+                logger (sprintf "Assigning InPort variables is not legal: %A" stm)
             let tcExpResult = tcExp (e, decls)
-            if tcExpResult then
+            if tcExpResult && not isInPort then
                 let eptyp = typeOfExp (e, decls)
                 if eptyp <> ptyp then
                     logger (sprintf "Type conflict: declared type %A not equal to actual type %A at %A" ptyp eptyp stm)

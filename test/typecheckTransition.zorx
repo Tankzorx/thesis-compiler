@@ -2,9 +2,9 @@ module testModule {
     datapath {
         b: int status,
         a: int reg,
-        d: bool in;
+        d: bool out;
         action1 {
-            d := true;
+            d := true && (false || true);
         },
         action2 {
             a := 2;
