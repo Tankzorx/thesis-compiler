@@ -33,7 +33,7 @@ module AST =
         | Not
 
     and Dec =
-        | RegDec of string * Typ * PrimTyp
+        | Dec of string * Typ * PrimTyp
 
     and Typ  =
         | InPort

@@ -16,7 +16,7 @@ module ASTHelpers =
 
     let getDecByName s decls: Dec =
         List.find (fun dec ->
-            let (RegDec(name, _, _)) = dec
+            let (Dec(name, _, _)) = dec
             name = s
         ) decls
 
@@ -41,7 +41,7 @@ module ASTHelpers =
             | C (N _) -> Integer
             | C (B _) -> PrimTyp.Boolean
             | Access (AVar s) ->
-                let (RegDec (_, _, ptyp)) = getDecByName s decls
+                let (Dec (_, _, ptyp)) = getDecByName s decls
                 ptyp
             | BExp (e1, op, _) ->
                 let ptyp1 = typeOfExp (e1, decls)

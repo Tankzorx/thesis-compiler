@@ -99,9 +99,9 @@ match ms with
         
         // Dp test
         // Construct some declarations
-        let dec1 = RegDec ("a", Reg, Integer)
-        let dec2 = RegDec ("b", InPort, Boolean)
-        let dec3 = RegDec ("c", OutPort, Integer)
+        let dec1 = Dec ("a", Reg, Integer)
+        let dec2 = Dec ("b", InPort, Boolean)
+        let dec3 = Dec ("c", OutPort, Integer)
         let decls = [dec1; dec2; dec3]
 
         // Construct some actions
@@ -124,9 +124,9 @@ match ms with
         // TYPECHECKING
         // printfn "%A" (typeOfExp (C (N 4), []))
 
-        let dec1 = RegDec ("a", Reg, Integer)
-        let dec2 = RegDec ("b", InPort, Boolean)
-        let dec3 = RegDec ("c", OutPort, Integer)
+        let dec1 = Dec ("a", Reg, Integer)
+        let dec2 = Dec ("b", InPort, Boolean)
+        let dec3 = Dec ("c", OutPort, Integer)
         let decls = [dec1; dec2; dec3]
 
         let e1 = C (N 4)

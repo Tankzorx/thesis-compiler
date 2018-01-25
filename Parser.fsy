@@ -121,7 +121,7 @@ ActionNameList:
     | NAME COMMA ActionNameList     {  $1 :: $3 }
 
 Dec:
-    | NAME COLON PrimTyp Typ                { RegDec($1, $4, $3)}
+    | NAME COLON PrimTyp Typ                { Dec($1, $4, $3)}
 
 PrimTyp:
     | INTEGER                    { Integer }

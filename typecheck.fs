@@ -21,11 +21,11 @@ module Typecheck =
         // Ensure that there are no status signals that has the same name
         // as controller input/output
         let checkDuplicateDecls =
-            List.filter (fun (RegDec (_, t, _)) -> t = StatusSignal) dpDecls |>
-            List.fold (fun acc (RegDec (dpDecName, _, _)) ->
+            List.filter (fun (Dec (_, t, _)) -> t = StatusSignal) dpDecls |>
+            List.fold (fun acc (Dec (dpDecName, _, _)) ->
                 let duplicateExists =
                     List.exists (
-                        fun (RegDec (ctrlDecName, _, _)) -> ctrlDecName = dpDecName) ctrlDecls
+                        fun (Dec (ctrlDecName, _, _)) -> ctrlDecName = dpDecName) ctrlDecls
                     
                 acc &&
                 (not duplicateExists)
@@ -47,7 +47,7 @@ module Typecheck =
         // There should be no status signal decls.
         let checkStatusDecls =
             List.fold (fun acc dec -> 
-                let (RegDec (_, typ, _)) = dec
+                let (Dec (_, typ, _)) = dec
                 if typ = StatusSignal || typ = Reg then
                     logger (sprintf "Variables of type '%A' is not allowed in the controller" typ)
                 acc &&
@@ -99,7 +99,7 @@ module Typecheck =
             ctrlDecls @
             List.filter (fun dec ->
                 match dec with
-                    | RegDec (_, StatusSignal, _) -> true
+                    | Dec (_, StatusSignal, _) -> true
                     | _ -> false
             ) dpDecls
         let tcGuardResult = tcExp (guard, guardContext)
@@ -145,7 +145,7 @@ module Typecheck =
 
         let lHandDeclared =
             List.exists (fun dec -> 
-                let (RegDec (name, _, _)) = dec
+                let (Dec (name, _, _)) = dec
                 name = lHand
             ) decls
 
@@ -153,7 +153,7 @@ module Typecheck =
             logger (sprintf "Variable %A is not declared in '%A'" lHand stm)
             false
         else
-            let (RegDec (_, _, ptyp)) = getDecByName lHand decls
+            let (Dec (_, _, ptyp)) = getDecByName lHand decls
             let tcExpResult = tcExp (e, decls)
             if tcExpResult then
                 let eptyp = typeOfExp (e, decls)
@@ -169,7 +169,7 @@ module Typecheck =
             | Access (AVar s) ->
                 let isDeclared =
                     List.exists (fun dec -> 
-                        let (RegDec (varName, _, _)) = dec
+                        let (Dec (varName, _, _)) = dec
                         varName = s
                     ) decls
                 if not isDeclared then

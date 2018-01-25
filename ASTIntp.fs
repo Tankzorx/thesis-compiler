@@ -25,9 +25,9 @@ module Interpreter =
                 | [] -> ctx
                 | dec::tail ->
                     match dec with
-                        | RegDec (varName, _, Boolean) ->
+                        | Dec (varName, _, Boolean) ->
                             innerF tail (ctx.Add(varName, B false))
-                        | RegDec (varName, _, _) ->
+                        | Dec (varName, _, _) ->
                             innerF tail (ctx.Add(varName, N 0))
         innerF decls ctx
 
