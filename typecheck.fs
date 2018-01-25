@@ -79,13 +79,12 @@ module Typecheck =
     // Checks:
     // - All actions must be single assignment
     // - All variables used must be declared
-    and tcDatapath (datapath: Datapath): bool =
-        let (Datapath (decls, actions)) = datapath
+    and tcDatapath ((Datapath (decls, actions)): Datapath): bool =
         
-        let tcActionsResult = 
+        let actionsWellFormed = 
             List.fold (fun acc action -> acc && (tcAction (action, decls))) true actions
 
-        tcActionsResult
+        actionsWellFormed
 
     and tcTransition (transition: Transition, dp: Datapath, controller: Controller): bool =
         // Checks:
