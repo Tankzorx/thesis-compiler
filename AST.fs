@@ -49,7 +49,7 @@ module AST =
         | Ass of string * Exp
 
     type Transition =
-        | T of string * Exp * string list * string
+        | T of string * Exp * string list * string * Stm list
 
     type Controller =
         | Controller of Dec list * Transition list

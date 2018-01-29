@@ -80,7 +80,7 @@ match ms with
         ]
         let testRun = exec m "Idle" inputVector
 
-        // List.map (fun l -> printfn "%A\n" l) testRun |> ignore
+        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
         // Expr test
         let ctx = Map.empty.Add("x", N 4)
@@ -151,7 +151,6 @@ match ms with
         let (Controller (decls, transitions)) = controller
 
         // List.map (fun t -> tcTransition (t, dp, controller)) transitions |> ignore
-
 
         printfn "dp tc: %A" (tcDatapath dp)
         printfn "ctrl tc: %A" (tcController (controller, dp))

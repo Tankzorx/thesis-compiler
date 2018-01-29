@@ -18,6 +18,8 @@ module testModule {
         b: int in;
         s1 [b](action1)> s2,
         s2 [true](action1, action2)> s3,
-        s3 [true && true](action3, action2)> s4
+        s3 [true && true](action3, action2)[
+            k := 5
+        ]> s4
     }
 }

@@ -110,7 +110,8 @@ TransitionList:
     | Transition COMMA TransitionList     { $1 :: $3 }
 
 Transition:
-    | NAME LSP Expr RSP LP ActionNameList RP GT NAME { T($1, $3, $6, $9) }
+    | NAME LSP Expr RSP LP ActionNameList RP LSP StmtL RSP GT NAME { T($1, $3, $6, $12, $9) }
+    | NAME LSP Expr RSP LP ActionNameList RP GT NAME { T($1, $3, $6, $9, []) }
 
 ActionNameL:
     |                               { [] }

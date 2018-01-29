@@ -20,11 +20,9 @@ module FindLargest {
     },
     Return {
         dpOut := largest;
-        cOut := true;
     },
     ReturnTemp {
         dpOut := temp;
-        cOut := true;
     }
   }
   controller {
@@ -36,7 +34,11 @@ module FindLargest {
     ReadIn [cIn && newLargestFound] (ReadInput2, SetLargest)> ReadIn,
     ReadIn [cIn && !newLargestFound] (ReadInput)> ReadIn,
 
-    ReadIn [!cIn && newLargestFound] (ReturnTemp)> Idle,
-    ReadIn [!cIn && !newLargestFound] (Return)> Idle
+    ReadIn [!cIn && newLargestFound] (ReturnTemp)[
+        cOut := true;
+    ]> Idle,
+    ReadIn [!cIn && !newLargestFound] (Return)[
+        cOut := true;
+    ]> Idle
   }
 }

@@ -60,7 +60,7 @@ module Typecheck =
         // First fold to get a list of actionNames used in the transitions,
         // then fold to ensure that every used action is mentioned in the datapath.
         let actionsDeclared =
-            List.fold (fun acc (T (_, _, actionNames, _) as t) ->
+            List.fold (fun acc (T (_, _, actionNames, _, _) as t) ->
                 acc &&
                 List.fold (
                     fun acc actionName ->
@@ -90,7 +90,7 @@ module Typecheck =
         // Checks:
         // - That the actions executed are single assignment
         // - That the guard is properly typed
-        let (T (s, guard, actionNames, s')) = transition
+        let (T (s, guard, actionNames, s', _)) = transition
         let (Datapath (dpDecls, _)) = dp
         let (Controller (ctrlDecls, _)) = controller
 

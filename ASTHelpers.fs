@@ -5,6 +5,8 @@ open Zorx.Frontend.AST
 
 module ASTHelpers =
 
+    type VarEnv = Map<string, Const>
+
     let isSingleAssignment (stmL: Stm list): bool =
         let lhOperands = List.map (
                             fun stm -> 
@@ -20,6 +22,10 @@ module ASTHelpers =
             name = s
         ) decls
 
+    let rec addVectorToEnv (input: (string * Const) list) (env: VarEnv) =
+                match input with
+                    | [] -> env
+                    | (varName, c)::tl -> addVectorToEnv tl (env.Add(varName, c))
 
 
     let getActionByName actionName dp =

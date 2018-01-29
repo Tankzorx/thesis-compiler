@@ -2,16 +2,17 @@ namespace Zorx
 
 
 open Zorx.Frontend.AST
+open Zorx.ASTHelpers
 
 module Interpreter =
 
     type ControllerNextStateResult =
-            | Success of string * string list
+            | Success of string * string list * VarEnv
             | Error of string
 
     let findTransitionsByStartState tList state =
         List.filter (fun t -> 
-            let (T (stateName, _, _, _)) = t
+            let (T (stateName, _, _, _, _)) = t
             stateName = state
         ) tList
 
@@ -52,9 +53,10 @@ module Interpreter =
         let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
         let moduleFunc conf =
             let (state, ctx) = conf
-            let (newState, actionList) = match ctrlFunc (state, ctx) with
-                                            | Success (a, b) -> (a, b)
-                                            | Error s -> failwith s
+            let (newState, actionList, ctx) = 
+                match ctrlFunc (state, ctx) with
+                    | Success (a, b, c) -> (a, b, c)
+                    | Error s -> failwith s
             let (newCtx) = dpFunc (actionList, ctx)
             (newState, newCtx)
 
@@ -75,7 +77,7 @@ module Interpreter =
             let validTransitions =
                 findTransitionsByStartState tL state |>
                 List.filter (fun t -> 
-                    let (T (_, exp, _, _)) = t
+                    let (T (_, exp, _, _, _)) = t
                     let v = intpExp exp inputVector
                     v = B true
                 ) 
@@ -86,9 +88,11 @@ module Interpreter =
             else
                 if validTransitions.Length > 1 then
                     logger "Multiple possible transitions. Picking first"
-                let (T (s1, exp, actions, s2)) = validTransitions.Head
+                let (T (s1, exp, actions, s2, stmts)) = validTransitions.Head
+                let ctxChanges = intpAction (Action ("aux", stmts), inputVector)
+                let newCtx = addVectorToEnv ctxChanges inputVector
                 logger (sprintf "CTRL: transition %A->%A with %A" s1 s2 exp)
-                Success (s2, actions)
+                Success (s2, actions, newCtx)
         controllerFunc
     
     // Should return datapath function.
