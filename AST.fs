@@ -62,7 +62,7 @@ module AST =
 
 
     type Module = 
-        M of String * Controller * Datapath // test
+        M of String * Controller * Datapath
 
     type Specification = S of Module list
 

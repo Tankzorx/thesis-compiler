@@ -42,6 +42,17 @@ ModList:
 
 Module:
     // | MODULE NAME LCP DecL SEMICOLON StmtL RCP     { M($4, $6, []) }
+    | MODULE NAME LP DecL RP LP DecL RP LCP Datapath Controller RCP 
+        {
+            let mControllerDecls = $4
+            let mDpDecls = $7
+            printfn "%A" mControllerDecls
+            let (Controller (controllerDecls, transitions)) = $11
+            let (Datapath (dpDecls, actions)) = $10
+            let controller = Controller (controllerDecls @ mControllerDecls, transitions)
+            let dp = Datapath (dpDecls @ mDpDecls, actions)
+            M ($2, controller, dp)
+        }
     | MODULE NAME LCP Datapath Controller RCP     { M ($2, $5, $4) }
 
 DecL:
@@ -86,6 +97,7 @@ Expr:
 
 Controller:
     | FSM LCP DecL SEMICOLON TransitionL RCP       { Controller($3, $5) }
+    | FSM LCP TransitionL RCP       { Controller([], $3) }
 
 ActionL:
     |                               { [] }

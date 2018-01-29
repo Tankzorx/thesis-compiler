@@ -156,3 +156,13 @@ match ms with
         printfn "ctrl tc: %A" (tcController (controller, dp))
 
 
+// let newModuleTest = parseFromFile "test/newModuleTest.zorx"
+// // printfn "%A" newModuleTest
+// let (S newModuleSpec) = newModuleTest
+// match newModuleSpec with
+//     | [] -> failwith "Empty fsmd"
+//     | m::newModuleSpec ->
+//         let (M (name, fsm, dp)) = m
+//         printfn "%A" m
+
+//         printfn "%A" (tcModule m)
