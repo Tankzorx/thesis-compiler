@@ -17,7 +17,9 @@ open Zorx.Interpreter
 open Zorx.Typecheck
 open Zorx.Frontend.AST
 open Zorx.ASTHelpers
-
+open Microsoft.FSharp.Text.Lexing
+open System.IO
+open System.Text
 
 let ast = parseFromFile "test/findLargest.zorx"
 // printfn "%A" ast
@@ -67,8 +69,6 @@ match ms with
         // let (s3, ctx3) = transitionSystem (s2, ctx2.Add("dpIn", N 5).Add("cIn", B false))
         // printfn "%A, %A \n\n" s3 ctx3
 
-
-
         // Testing runner function.
         let inputVector = [
             [("cIn", B true); ("dpIn", N 3)];
@@ -80,7 +80,7 @@ match ms with
         ]
         let testRun = exec m "Idle" inputVector
 
-        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
+        // List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
         // Expr test
         let ctx = Map.empty.Add("x", N 4)
@@ -156,13 +156,10 @@ match ms with
         printfn "ctrl tc: %A" (tcController (controller, dp))
 
 
-// let newModuleTest = parseFromFile "test/newModuleTest.zorx"
-// // printfn "%A" newModuleTest
-// let (S newModuleSpec) = newModuleTest
-// match newModuleSpec with
-//     | [] -> failwith "Empty fsmd"
-//     | m::newModuleSpec ->
-//         let (M (name, fsm, dp)) = m
-//         printfn "%A" m
-
-//         printfn "%A" (tcModule m)
+let newModuleTest = parseFromFile "test/newModuleTest.zorx"
+let (S newModuleSpec) = newModuleTest
+match newModuleSpec with
+    | [] -> failwith "Empty fsmd"
+    | m::newModuleSpec ->
+        let (M (name, fsm, dp)) = m
+        printfn "%A" (tcModule m)

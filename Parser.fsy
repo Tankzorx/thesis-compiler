@@ -17,7 +17,7 @@
 %token TRUE FALSE IF
 
 %left AND OR
-%left EQ NEQ  LEQ GEQ LT GT
+%left EQ NEQ LEQ GEQ LT GT
 %left NOT
 %left PLUS MINUS
 
