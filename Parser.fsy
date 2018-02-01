@@ -24,7 +24,6 @@
 %type <Specification> start
 %type <Module list> ModList ModuleL
 
-
 %%
 
 start: Specification EOF          { S($1) }

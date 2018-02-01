@@ -16,9 +16,9 @@ let keyword s =
     | "module"       -> MODULE
     | "controller"   -> FSM
     | "datapath"     -> DATAPATH
-    | "in"        -> INPORT
-    | "out"       -> OUTPORT
-    | "reg"       -> REG
+    | "in"           -> INPORT
+    | "out"          -> OUTPORT
+    | "reg"          -> REG
     | "true"         -> TRUE
     | "false"        -> FALSE
     | "status"       -> STATUSSIGNAL

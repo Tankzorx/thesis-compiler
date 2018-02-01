@@ -4,6 +4,7 @@ module FindLargest
   datapath {
     largest: int reg, temp: int reg,
     newLargestFound: bool status;
+    // status signals can only be written to in dp?
     Init {
       largest := dpIn;
       temp := dpIn;

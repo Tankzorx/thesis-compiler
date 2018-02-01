@@ -46,7 +46,7 @@ module Typecheck =
         let (Controller (ctrlDecls, transitions)) = controller
         let (Datapath (_, actions)) = dp
 
-        // There should be no status signal decls.
+        // There should be no status signal and reg decls.
         let checkStatusDecls =
             List.fold (fun acc dec -> 
                 let (Dec (_, typ, _)) = dec

@@ -47,10 +47,9 @@ module Interpreter =
         let (Controller (ctrlDecL, _)) = ctrl
         let (Datapath (dpDecL, _)) = dp
 
-        // let actionNames = List.map (fun x -> x) actL
         let ctrlFunc = intpController ctrl
         let dpFunc = intpDp dp
-        let startEnv = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
+        let varEnv0 = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
         let moduleFunc conf =
             let (state, ctx) = conf
             let (newState, actionList, ctx) = 
@@ -60,7 +59,7 @@ module Interpreter =
             let (newCtx) = dpFunc (actionList, ctx)
             (newState, newCtx)
 
-        (moduleFunc, startEnv)
+        (moduleFunc, varEnv0)
     
     and intpStm (stm: Stm, ctx: VarEnv)  =
         let (Ass (lval, exp)) = stm
