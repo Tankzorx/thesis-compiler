@@ -226,7 +226,7 @@ module Interpreter =
                     let dpEnv = addInputVectorToEnv cycleInput dpEnv
                     let ctrlEnv = addInputVectorToEnv ctrlInCycle ctrlEnv
                     let (nextState, nextEnv, nextCtrlEnv) = transitionSystem (state, dpEnv, ctrlEnv)
-                    let cycleOutput = (mapToList nextEnv) @ (mapToList nextCtrlEnv)
+                    let cycleOutput = (mapToList nextEnv)
                     logger "Cycle-----"
                     inner nextState (nextEnv, nextCtrlEnv) (rest, restCtrlIn) (cycleOutput::runVector)
                 | _ -> failwith "Different input length is not allowed."
