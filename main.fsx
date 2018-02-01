@@ -70,17 +70,23 @@ match ms with
         // printfn "%A, %A \n\n" s3 ctx3
 
         // Testing runner function.
-        let inputVector = [
-            [("cIn", B true); ("dpIn", N 3)];
-            [("cIn", B true); ("dpIn", N 5)];
-            [("cIn", B true); ("dpIn", N 4)];
-            [("cIn", B false); ("dpIn", N 5)];
+        let dpIn = [
+            [("dpIn", N 3)];
+            [("dpIn", N 5)];
+            [("dpIn", N 4)];
+            [("dpIn", N 5)];
             // [("cIn", B false); ("dpIn", N 3)];
             // [("cIn", B false); ("dpIn", N 3)];
         ]
-        let testRun = exec m "Idle" inputVector
+        let ctrlIn = [
+            [("cIn", B true)]; 
+            [("cIn", B true)]; 
+            [("cIn", B true)]; 
+            [("cIn", B false)]; 
+        ]
+        let testRun = exec m "Idle" dpIn ctrlIn
 
-        // List.map (fun l -> printfn "%A\n" l) testRun |> ignore
+        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
         // Expr test
         let ctx = Map.empty.Add("x", N 4)

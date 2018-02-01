@@ -3,6 +3,9 @@ namespace Zorx
 
 open Zorx.Frontend.AST
 open Zorx.ASTHelpers
+open Zorx.Frontend
+open System
+open System.Runtime.InteropServices
 
 module Interpreter =
 
@@ -49,17 +52,33 @@ module Interpreter =
 
         let ctrlFunc = intpController ctrl
         let dpFunc = intpDp dp
-        let varEnv0 = initVarEnvFromDecls dpDecL Map.empty |> initVarEnvFromDecls ctrlDecL
+        let varEnv0 = initVarEnvFromDecls dpDecL Map.empty
+        let ctrlVarEnv0 =
+            List.fold (fun (acc: Map<string, Const>) (Dec (n, t, ptyp)) -> 
+                if t = InPort || t = OutPort then
+                    let defaultConstVal = if (ptyp = PrimTyp.Boolean) then B false else N 0
+                    acc.Add(n, defaultConstVal)
+                else
+                    acc
+            ) Map.empty ctrlDecL
         let moduleFunc conf =
-            let (state, ctx) = conf
-            let (newState, actionList, ctx) = 
-                match ctrlFunc (state, ctx) with
+            let (state, (varEnv: VarEnv), ctrlInput) = conf
+            // Create ctrl var env by inserting status signals from dpvarenv.
+            let ctrlVarEnv =
+                Map.fold (fun (acc: VarEnv) key _ ->
+                    if (List.exists (fun (Dec (n, typ, _)) -> n = key && typ = StatusSignal) dpDecL)
+                    then
+                        acc.Add(key, varEnv.[key])
+                    else acc
+                ) ctrlInput varEnv
+            let (newState, actionList, ctrlVarEnv) = 
+                match ctrlFunc (state, ctrlVarEnv) with
                     | Success (a, b, c) -> (a, b, c)
                     | Error s -> failwith s
-            let (newCtx) = dpFunc (actionList, ctx)
-            (newState, newCtx)
+            let (newVarEnv) = dpFunc (actionList, varEnv)
+            (newState, newVarEnv, ctrlVarEnv)
 
-        (moduleFunc, varEnv0)
+        (moduleFunc, varEnv0, ctrlVarEnv0)
     
     and intpStm (stm: Stm, ctx: VarEnv)  =
         let (Ass (lval, exp)) = stm
@@ -88,7 +107,7 @@ module Interpreter =
                 if validTransitions.Length > 1 then
                     logger "Multiple possible transitions. Picking first"
                 let (T (s1, exp, actions, s2, stmts)) = validTransitions.Head
-                let ctxChanges = intpAction (Action ("aux", stmts), inputVector)
+                let ctxChanges = intpAction (AST.Action ("aux", stmts), inputVector)
                 let newCtx = addVectorToEnv ctxChanges inputVector
                 logger (sprintf "CTRL: transition %A->%A with %A" s1 s2 exp)
                 Success (s2, actions, newCtx)
@@ -141,7 +160,7 @@ module Interpreter =
 
         dpFunc
 
-    and intpAction (action: Action, ctx: VarEnv): (string * Const) list =
+    and intpAction (action: AST.Action, ctx: VarEnv): (string * Const) list =
         let (Action (_, stmL)) = action
         List.fold (fun acc stm  ->
             let (varName, value) = intpStm (stm, ctx)
@@ -190,8 +209,8 @@ module Interpreter =
         logger (sprintf "Accessing: %s (%A)" s ctx.[s])
         ctx.[s]
 
-    let exec parsedModule startState (inputVector: (string * Const) list list) =
-        let (transitionSystem, startEnv) = intpModule parsedModule
+    let exec parsedModule startState (dpIn: (string * Const) list list) (ctrlIn: (string * Const) list list) =
+        let (transitionSystem, startEnv, ctrlEnv) = intpModule parsedModule
 
         let mapToList map = Map.fold (fun foldState key value -> ((key, value)::foldState)) [] map
 
@@ -200,14 +219,16 @@ module Interpreter =
                 | [] -> env
                 | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
 
-        let rec inner state (env: VarEnv) inputVector (runVector: (string * Const) list list) =
-            match inputVector with
+        let rec inner state (dpEnv: VarEnv, ctrlEnv: VarEnv) (dpInputVector, ctrlInputVector) (runVector: (string * Const) list list) =
+            match dpInputVector with
                 | [] -> List.rev runVector
                 | cycleInput::rest ->
-                    let env = addInputVectorToEnv cycleInput env
-                    let (nextState, nextEnv) = transitionSystem (state, env)
-                    let cycleOutput = mapToList nextEnv
+                    let (ctrlInCycle::restCtrlIn) = ctrlInputVector
+                    let dpEnv = addInputVectorToEnv cycleInput dpEnv
+                    let ctrlEnv = addInputVectorToEnv ctrlInCycle ctrlEnv
+                    let (nextState, nextEnv, nextCtrlEnv) = transitionSystem (state, dpEnv, ctrlEnv)
+                    let cycleOutput = (mapToList nextEnv) @ (mapToList nextCtrlEnv)
                     logger "Cycle-----"
-                    inner nextState nextEnv rest (cycleOutput::runVector)
+                    inner nextState (nextEnv, nextCtrlEnv) (rest, restCtrlIn) (cycleOutput::runVector)
 
-        inner startState startEnv  inputVector [(mapToList startEnv)]
+        inner startState (startEnv, ctrlEnv)  (dpIn, ctrlIn) [(mapToList startEnv)]
