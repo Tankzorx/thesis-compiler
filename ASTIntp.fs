@@ -62,20 +62,20 @@ module Interpreter =
                     acc
             ) Map.empty ctrlDecL
         let moduleFunc conf =
-            let (state, (varEnv: VarEnv), ctrlInput) = conf
+            let (state, (dpVarEnv: VarEnv), ctrlVarEnv) = conf
             // Create ctrl var env by inserting status signals from dpvarenv.
             let ctrlVarEnv =
                 Map.fold (fun (acc: VarEnv) key _ ->
                     if (List.exists (fun (Dec (n, typ, _)) -> n = key && typ = StatusSignal) dpDecL)
                     then
-                        acc.Add(key, varEnv.[key])
+                        acc.Add(key, dpVarEnv.[key])
                     else acc
-                ) ctrlInput varEnv
+                ) ctrlVarEnv dpVarEnv
             let (newState, actionList, ctrlVarEnv) = 
                 match ctrlFunc (state, ctrlVarEnv) with
                     | Success (a, b, c) -> (a, b, c)
                     | Error s -> failwith s
-            let (newVarEnv) = dpFunc (actionList, varEnv)
+            let (newVarEnv) = dpFunc (actionList, dpVarEnv)
             (newState, newVarEnv, ctrlVarEnv)
 
         (moduleFunc, varEnv0, ctrlVarEnv0)
@@ -220,15 +220,15 @@ module Interpreter =
                 | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
 
         let rec inner state (dpEnv: VarEnv, ctrlEnv: VarEnv) (dpInputVector, ctrlInputVector) (runVector: (string * Const) list list) =
-            match dpInputVector with
-                | [] -> List.rev runVector
-                | cycleInput::rest ->
-                    let (ctrlInCycle::restCtrlIn) = ctrlInputVector
+            match dpInputVector, ctrlInputVector with
+                | [], [] -> List.rev runVector
+                | cycleInput::rest, (ctrlInCycle::restCtrlIn) ->
                     let dpEnv = addInputVectorToEnv cycleInput dpEnv
                     let ctrlEnv = addInputVectorToEnv ctrlInCycle ctrlEnv
                     let (nextState, nextEnv, nextCtrlEnv) = transitionSystem (state, dpEnv, ctrlEnv)
                     let cycleOutput = (mapToList nextEnv) @ (mapToList nextCtrlEnv)
                     logger "Cycle-----"
                     inner nextState (nextEnv, nextCtrlEnv) (rest, restCtrlIn) (cycleOutput::runVector)
+                | _ -> failwith "Different input length is not allowed."
 
         inner startState (startEnv, ctrlEnv)  (dpIn, ctrlIn) [(mapToList startEnv)]
