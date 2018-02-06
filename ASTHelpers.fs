@@ -2,6 +2,7 @@ namespace Zorx
 
 
 open Zorx.Frontend.AST
+open Zorx.Interpreter
 
 module ASTHelpers =
 
@@ -56,8 +57,8 @@ module ASTHelpers =
                     | Lt -> PrimTyp.Boolean
                     | Leq -> PrimTyp.Boolean
                     | Geq -> PrimTyp.Boolean
-                    | Neq -> ptyp1
-                    | Eq -> ptyp1
+                    | Neq -> PrimTyp.Boolean
+                    | Eq -> PrimTyp.Boolean
                     | Plus -> Integer
                     | Minus -> Integer
                     | And -> PrimTyp.Boolean
@@ -65,3 +66,19 @@ module ASTHelpers =
             | UExp (_, op) ->
                 match op with
                     | Not -> PrimTyp.Boolean
+
+    // Only works for reasonable variables and values.
+    // Long variables/huge values will not look pretty.
+    let prettyPrintRun run =
+        match List.tryHead run with
+            | Some h -> 
+                List.iter (fun (key, _) -> printf "%A   " key) h
+                printfn ""
+                List.iter (fun l ->
+                    List.iter (fun item ->
+                        let (_,value) = item
+                        printf "|%A|\t" value
+                    ) l
+                    printf "\n"
+                ) run
+            | None -> ()
