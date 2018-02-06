@@ -72,7 +72,6 @@ rule tokenize = parse
   | "-"         { lexerLogger "Lexer read MINUS"; MINUS }
   | "+"         { lexerLogger "Lexer read PLUS"; PLUS }
   | ";"         { lexerLogger "Lexer read SEMICOLON"; SEMICOLON }
-  // | comment     { tokenize lexbuf }
   | identifier  { lexerLogger (sprintf "Lexer read keyword:  %A" keyword(Encoding.UTF8.GetString(lexbuf.Lexeme)))
                   keyword(Encoding.UTF8.GetString(lexbuf.Lexeme)) }
   | eof         { lexerLogger "Lexer read eof"; EOF }

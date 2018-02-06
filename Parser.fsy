@@ -45,7 +45,8 @@ Module:
         {
             let mControllerDecls = $4
             let mDpDecls = $7
-            printfn "%A" mControllerDecls
+            logger (sprintf "parsed controller decls: %A" mControllerDecls)
+            logger (sprintf "parsed dp decls: %A" mDpDecls)
             let (Controller (controllerDecls, transitions)) = $11
             let (Datapath (dpDecls, actions)) = $10
             let controller = Controller (controllerDecls @ mControllerDecls, transitions)

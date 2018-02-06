@@ -1,0 +1,130 @@
+module Elevator
+    (floorReq: bool in)
+    (floorReqN: int in,
+    readyForInput: bool out) {
+  datapath {
+    currentFloor: int reg,
+    doorState: bool reg, // false=closed, true=open.
+    q1: int reg,
+    q2: int reg,
+    q3: int reg,
+    queuePointer: int status,
+    moveUp: bool status,
+    moveDown: bool status,
+    stay: bool status;
+
+    init {
+      currentFloor := 1;
+      queuePointer := 1;
+    },
+    idle {
+    },
+    setQ1 {
+      q1 := floorReqN;
+      queuePointer := 2;
+    },
+    setQ2 {
+      q2 := floorReqN;
+      queuePointer := 3;
+    },
+    setQ3 {
+      q3 := floorReqN;
+      queuePointer := 4;
+    },
+    // Compare current floor to queue head.
+    compCurrQ1 {
+      moveUp:= currentFloor < q1;
+      moveDown:= currentFloor > q1;
+      stay:= currentFloor == q1;
+    },
+    // Compare current floor to request
+    compCurrFloorReqN {
+      moveUp:= currentFloor < floorReqN;
+      moveDown:= currentFloor > floorReqN;
+      stay:= currentFloor == floorReqN;
+    },
+    moveUp {
+      currentFloor := currentFloor + 1;
+      moveUp:= currentFloor + 1 < q1;
+      moveDown:= currentFloor + 1 > q1;
+      stay:= currentFloor + 1 == q1;
+    },
+    moveDown {
+      currentFloor := currentFloor - 1;
+      moveUp:= currentFloor - 1 < q1;
+      moveDown:= currentFloor - 1 > q1;
+      stay:= currentFloor - 1 == q1;
+    },
+    openDoor {
+      doorState:= true;
+    },
+    closeDoor {
+      doorState := false;
+    },
+    popQueue {
+      queuePointer:= queuePointer - 1;
+      q1 := q2;
+      q2 := q3;
+    }
+  }
+  controller {
+    init [true](init)[
+      readyForInput := false;
+    ]> idle,
+
+    // In this state we know queue is empty.
+    // And door is closed
+    idle [floorReq](setQ1, compCurrFloorReqN)[
+      readyForInput := true;
+    ]> handleMove,
+    idle [!floorReq](idle)[
+      readyForInput := true;
+    ]> idle,
+
+    // Door is closed when here
+    handleMove [moveUp && !floorReq](moveUp)[
+      readyForInput := false;
+    ]> handleDoor,
+    handleMove [moveDown && !floorReq](moveDown)[
+      readyForInput := false;
+    ]> handleDoor,
+
+    // Door is closed when here
+    handleMove [moveUp && floorReq && queuePointer == 2](moveUp, setQ2)[
+      readyForInput := true;
+    ]> handleDoor,
+    handleMove [moveDown && floorReq && queuePointer == 2](moveDown, setQ2)[
+      readyForInput := true;
+    ]> handleDoor,
+    // Door is closed when here
+    handleMove [moveUp && floorReq && queuePointer == 3](moveUp, setQ3)[
+      readyForInput := true;
+    ]> handleDoor,
+    handleMove [moveDown && floorReq && queuePointer == 3](moveDown, setQ3)[
+      readyForInput := true;
+    ]> handleDoor,
+    // Door is closed when here
+    handleMove [moveUp && floorReq && queuePointer > 3](moveUp)[
+      readyForInput := false;
+    ]> handleDoor,
+    handleMove [moveDown && floorReq && queuePointer > 3](moveDown)[
+      readyForInput := false;
+    ]> handleDoor,
+
+    // Door is closed when getting here.
+    handleDoor [stay](openDoor, popQueue)[
+      readyForInput := false;
+    ]> closeDoor,
+    handleDoor [!stay](compCurrQ1)[
+      readyForInput := false;
+    ]> handleMove,
+
+    // Door is open here
+    closeDoor [queuePointer == 1](closeDoor)[
+      readyForInput := true;
+    ]> idle, // Queue just emptied
+    closeDoor [queuePointer > 1](closeDoor, compCurrQ1)[
+      readyForInput := false;
+    ]> handleMove
+  }
+}

@@ -27,7 +27,7 @@ let (S ms) = ast
 match ms with
     | [] -> failwith "Empty fsmd"
     | m::ms ->
-        let (M (name, fsm, dp)) = m
+//         let (M (name, fsm, dp)) = m
         // let (Fsm (decL, tL)) = fsm
         // match tL with
         //     | [] -> failwith "Empty transition list"
@@ -70,17 +70,23 @@ match ms with
         // printfn "%A, %A \n\n" s3 ctx3
 
         // Testing runner function.
-        let inputVector = [
-            [("cIn", B true); ("dpIn", N 3)];
-            [("cIn", B true); ("dpIn", N 5)];
-            [("cIn", B true); ("dpIn", N 4)];
-            [("cIn", B false); ("dpIn", N 5)];
+        let dpIn = [
+            [("dpIn", N 3)];
+            [("dpIn", N 5)];
+            [("dpIn", N 4)];
+            [("dpIn", N 5)];
             // [("cIn", B false); ("dpIn", N 3)];
             // [("cIn", B false); ("dpIn", N 3)];
         ]
-        let testRun = exec m "Idle" inputVector
+        let ctrlIn = [
+            [("cIn", B true)]; 
+            [("cIn", B true)]; 
+            [("cIn", B true)]; 
+            [("cIn", B false)]; 
+        ]
+        let testRun = exec m "Idle" dpIn ctrlIn
 
-        // List.map (fun l -> printfn "%A\n" l) testRun |> ignore
+        List.map (fun l -> printfn "%A\n" l) testRun |> ignore
         
         // Expr test
         let ctx = Map.empty.Add("x", N 4)
@@ -163,3 +169,37 @@ match newModuleSpec with
     | m::newModuleSpec ->
         let (M (name, fsm, dp)) = m
         printfn "%A" (tcModule m)
+printfn "ELEVATOR:\n\n"
+let elevatorAST = parseFromFile "test/elevator.zorx"
+let (S elevatorSpec) = elevatorAST
+match elevatorSpec with
+    | [] -> failwith "Empty fsmd"
+    | m::_ ->
+        let (M (moduleName, _, _)) = m
+        printfn "typcheck of %A passing: %A" moduleName (tcModule m)
+        let ctrlIn = [
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+        ]
+        let dpIn = [
+            [("floorReqN", N 2)];
+            [("floorReqN", N 3)];
+            [("floorReqN", N 1)];
+
+            [("floorReqN", N 3)];
+            [("floorReqN", N 1)];
+            [("floorReqN", N 2)];
+        ]
+
+        let condFunc (env: VarEnv) =
+            env.["readyForInput"] = B true
+
+        let testRun = execWithCondition m "init" dpIn ctrlIn condFunc
+
+        prettyPrintRun testRun
+        prettyPrintRun []

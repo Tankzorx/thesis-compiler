@@ -10,13 +10,13 @@ module Typecheck =
     let loggingEnabled = true
     let logger msg = Zorx.Logging.logger loggingEnabled msg
 
+    type TypeEnv = Dec list
+
+
     // Checks:
     // - No duplicate decls in dp status signals and controller decls.
     // - valid controller+dp
-
-    type TypeEnv = Dec list
     let rec tcModule ((M (_, ctrl, dp))): bool =
-
         let (Controller (ctrlDecls, _)) = ctrl
         let (Datapath (dpDecls, _)) = dp
 
@@ -28,10 +28,9 @@ module Typecheck =
                 let duplicateExists =
                     List.exists (
                         fun (Dec (ctrlDecName, _, _)) -> ctrlDecName = dpDecName) ctrlDecls
-                    
                 acc &&
                 (not duplicateExists)
-            ) true 
+            ) true
 
         checkDuplicateDecls &&
         tcController (ctrl, dp) &&
@@ -77,13 +76,17 @@ module Typecheck =
             false
 
     // Checks:
+    // - No variable is declared twice
     // - All actions must be single assignment
     // - All variables used must be declared
     and tcDatapath ((Datapath (decls, actions)): Datapath): bool =
         
+        let declsDuplicatesRemoved =
+            List.map (fun (Dec (n,_,_)) -> n) decls |> Set.ofList |> Set.toList
+
         let actionsWellFormed = 
             List.fold (fun acc action -> acc && (tcAction (action, decls))) true actions
-
+        declsDuplicatesRemoved.Length = decls.Length &&
         actionsWellFormed
 
     and tcTransition (transition: Transition, dp: Datapath, controller: Controller): bool =

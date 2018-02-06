@@ -1,0 +1,154 @@
+// 3 floors
+// Elevator can move 1 floor pr. cycle.
+// Starts on floor 1, no concept of closed/open door for now.
+module Elevator
+    (reqN: int in, // when in the elevator, a floor is requested
+     callN: int in, // when outside the elevator, the elevator is called
+     callDir: int in) // -1=down, 1=up
+    () {
+    datapath {
+        DoorClosed: bool status,
+        DoorOpened: bool status,
+        ArrivedAtFloor: bool status,
+        Idle {},
+        OpenDoor {
+            DoorOpened := true;
+        },
+        CloseDoor {
+            DoorClosed := true;
+        },
+        StartMotorUp {}, // Symbolic action for now.
+        StartMotorDown {}, // Symbolic action for now.
+        StopMotor {}, // Symbolic action for now.
+        Idle {}
+    }
+    // S = (BS x Floor x ReqQ)
+    controller {
+
+        // E_closing
+        Closing_1_q
+        Closing_1_q1
+        Closing_1_q1up
+        Closing_1_q2
+        Closing_1_q2up
+        Closing_1_q2down
+        Closing_1_q3
+        Closing_1_q3down
+        Closing_2_q
+        Closing_2_q1
+        Closing_2_q1up
+        Closing_2_q2
+        Closing_2_q2up
+        Closing_2_q2down
+        Closing_2_q3
+        Closing_2_q3down
+        Closing_3_q
+        Closing_3_q1
+        Closing_3_q1up
+        Closing_3_q2
+        Closing_3_q2up
+        Closing_3_q2down
+        Closing_3_q3
+        Closing_3_q3down
+
+        Opening_1_q
+        Opening_1_q1
+        Opening_1_q1up
+        Opening_1_q2
+        Opening_1_q2up
+        Opening_1_q2down
+        Opening_1_q3
+        Opening_1_q3down
+        Opening_2_q
+        Opening_2_q1
+        Opening_2_q1up
+        Opening_2_q2
+        Opening_2_q2up
+        Opening_2_q2down
+        Opening_2_q3
+        Opening_2_q3down
+        Opening_3_q
+        Opening_3_q1
+        Opening_3_q1up
+        Opening_3_q2
+        Opening_3_q2up
+        Opening_3_q2down
+        Opening_3_q3
+        Opening_3_q3down
+
+        MovingUp_1_q
+        MovingUp_1_q1
+        MovingUp_1_q1up
+        MovingUp_1_q2
+        MovingUp_1_q2up
+        MovingUp_1_q2down
+        MovingUp_1_q3
+        MovingUp_1_q3down
+        MovingUp_2_q
+        MovingUp_2_q1
+        MovingUp_2_q1up
+        MovingUp_2_q2
+        MovingUp_2_q2up
+        MovingUp_2_q2down
+        MovingUp_2_q3
+        MovingUp_2_q3down
+        MovingUp_3_q
+        MovingUp_3_q1
+        MovingUp_3_q1up
+        MovingUp_3_q2
+        MovingUp_3_q2up
+        MovingUp_3_q2down
+        MovingUp_3_q3
+        MovingUp_3_q3down
+
+        MovingDown_1_q
+        MovingDown_1_q1
+        MovingDown_1_q1up
+        MovingDown_1_q2
+        MovingDown_1_q2up
+        MovingDown_1_q2down
+        MovingDown_1_q3
+        MovingDown_1_q3down
+        MovingDown_2_q
+        MovingDown_2_q1
+        MovingDown_2_q1up
+        MovingDown_2_q2
+        MovingDown_2_q2up
+        MovingDown_2_q2down
+        MovingDown_2_q3
+        MovingDown_2_q3down
+        MovingDown_3_q
+        MovingDown_3_q1
+        MovingDown_3_q1up
+        MovingDown_3_q2
+        MovingDown_3_q2up
+        MovingDown_3_q2down
+        MovingDown_3_q3
+        MovingDown_3_q3down
+
+        Idling_1_q
+        Idling_1_q1
+        Idling_1_q1up
+        Idling_1_q2
+        Idling_1_q2up
+        Idling_1_q2down
+        Idling_1_q3
+        Idling_1_q3down
+        Idling_2_q
+        Idling_2_q1
+        Idling_2_q1up
+        Idling_2_q2
+        Idling_2_q2up
+        Idling_2_q2down
+        Idling_2_q3
+        Idling_2_q3down
+        Idling_3_q
+        Idling_3_q1
+        Idling_3_q1up
+        Idling_3_q2
+        Idling_3_q2up
+        Idling_3_q2down
+        Idling_3_q3
+        Idling_3_q3down
+  }
+}
