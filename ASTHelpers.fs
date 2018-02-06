@@ -2,7 +2,6 @@ namespace Zorx
 
 
 open Zorx.Frontend.AST
-open Zorx.Interpreter
 
 module ASTHelpers =
 
