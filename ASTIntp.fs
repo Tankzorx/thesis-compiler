@@ -227,8 +227,34 @@ module Interpreter =
                     let ctrlEnv = addInputVectorToEnv ctrlInCycle ctrlEnv
                     let (nextState, nextEnv, nextCtrlEnv) = transitionSystem (state, dpEnv, ctrlEnv)
                     let cycleOutput = (mapToList nextEnv)
-                    logger "Cycle-----"
+                    logger "Cycle-------------------------------------------"
                     inner nextState (nextEnv, nextCtrlEnv) (rest, restCtrlIn) (cycleOutput::runVector)
+                | _ -> failwith "Different input length is not allowed."
+
+        inner startState (startEnv, ctrlEnv)  (dpIn, ctrlIn) [(mapToList startEnv)]
+    let execWithCondition parsedModule startState (dpIn: (string * Const) list list) (ctrlIn: (string * Const) list list) (conditionFunc: VarEnv -> bool) =
+        let (transitionSystem, startEnv, ctrlEnv) = intpModule parsedModule
+
+        let mapToList map = Map.fold (fun foldState key value -> ((key, value)::foldState)) [] map
+
+        let rec addInputVectorToEnv input (env: VarEnv) =
+            match input with
+                | [] -> env
+                | (varName, c)::tl -> addInputVectorToEnv tl (env.Add(varName, c))
+
+        let rec inner state (dpEnv: VarEnv, ctrlEnv: VarEnv) (dpInputVector, ctrlInputVector) (runVector: (string * Const) list list) =
+            match dpInputVector, ctrlInputVector with
+                | [], [] -> List.rev runVector
+                | cycleInput::rest, (ctrlInCycle::restCtrlIn) ->
+                    let dpEnv = addInputVectorToEnv cycleInput dpEnv
+                    let ctrlEnv = addInputVectorToEnv ctrlInCycle ctrlEnv
+                    let (nextState, nextEnv, nextCtrlEnv) = transitionSystem (state, dpEnv, ctrlEnv)
+                    let cycleOutput = (mapToList nextEnv)
+                    logger "Cycle-------------------------------------------"
+                    if conditionFunc nextCtrlEnv then
+                        inner nextState (nextEnv, nextCtrlEnv) (rest, restCtrlIn) (cycleOutput::runVector)
+                    else
+                        inner nextState (nextEnv, nextCtrlEnv) (dpInputVector, ctrlInputVector) (cycleOutput::runVector)
                 | _ -> failwith "Different input length is not allowed."
 
         inner startState (startEnv, ctrlEnv)  (dpIn, ctrlIn) [(mapToList startEnv)]

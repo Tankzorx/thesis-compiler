@@ -27,7 +27,7 @@ let (S ms) = ast
 match ms with
     | [] -> failwith "Empty fsmd"
     | m::ms ->
-        let (M (name, fsm, dp)) = m
+//         let (M (name, fsm, dp)) = m
         // let (Fsm (decL, tL)) = fsm
         // match tL with
         //     | [] -> failwith "Empty transition list"
@@ -169,3 +169,37 @@ match newModuleSpec with
     | m::newModuleSpec ->
         let (M (name, fsm, dp)) = m
         printfn "%A" (tcModule m)
+printfn "ELEVATOR:\n\n"
+let elevatorAST = parseFromFile "test/elevator.zorx"
+let (S elevatorSpec) = elevatorAST
+match elevatorSpec with
+    | [] -> failwith "Empty fsmd"
+    | m::_ ->
+        let (M (moduleName, _, _)) = m
+        printfn "typcheck of %A passing: %A" moduleName (tcModule m)
+        let ctrlIn = [
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+            [("floorReq", B true)];
+        ]
+        let dpIn = [
+            [("floorReqN", N 2)];
+            [("floorReqN", N 3)];
+            [("floorReqN", N 1)];
+
+            [("floorReqN", N 3)];
+            [("floorReqN", N 1)];
+            [("floorReqN", N 2)];
+        ]
+
+        let condFunc (env: VarEnv) =
+            env.["readyForInput"] = B true
+
+        let testRun = execWithCondition m "init" dpIn ctrlIn condFunc
+
+        prettyPrintRun testRun
+        prettyPrintRun []
