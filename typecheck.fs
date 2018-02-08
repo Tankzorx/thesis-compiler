@@ -28,6 +28,8 @@ module Typecheck =
                 let duplicateExists =
                     List.exists (
                         fun (Dec (ctrlDecName, _, _)) -> ctrlDecName = dpDecName) ctrlDecls
+                if duplicateExists then 
+                    logger (sprintf "Duplicate declaration found %A in controller/statussignals" dpDecName)
                 acc &&
                 (not duplicateExists)
             ) true
