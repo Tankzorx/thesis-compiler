@@ -89,21 +89,18 @@ module Elevator
       readyForInput := false;
     ]> handleDoor,
 
-    // Door is closed when here
     handleMove [moveUp && floorReq && queuePointer == 2](moveUp, setQ2)[
       readyForInput := true;
     ]> handleDoor,
     handleMove [moveDown && floorReq && queuePointer == 2](moveDown, setQ2)[
       readyForInput := true;
     ]> handleDoor,
-    // Door is closed when here
     handleMove [moveUp && floorReq && queuePointer == 3](moveUp, setQ3)[
       readyForInput := true;
     ]> handleDoor,
     handleMove [moveDown && floorReq && queuePointer == 3](moveDown, setQ3)[
       readyForInput := true;
     ]> handleDoor,
-    // Door is closed when here
     handleMove [moveUp && floorReq && queuePointer > 3](moveUp)[
       readyForInput := false;
     ]> handleDoor,
