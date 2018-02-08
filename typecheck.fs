@@ -93,23 +93,26 @@ module Typecheck =
         // Checks:
         // - That the actions executed are single assignment
         // - That the guard is properly typed
-        let (T (s, guard, actionNames, s', _)) = transition
+        let (T (s, guard, actionNames, s', cStmts)) = transition
         let (Datapath (dpDecls, _)) = dp
         let (Controller (ctrlDecls, _)) = controller
 
+
         // The guard expression should be evaluated with all the controllers
         // variables, and the status signals of the dp.
-        let guardContext =
+        let transitionContext =
             ctrlDecls @
             List.filter (fun dec ->
                 match dec with
                     | Dec (_, StatusSignal, _) -> true
                     | _ -> false
             ) dpDecls
-        let tcGuardResult = tcExp (guard, guardContext)
+
+        let tcGuardResult = tcExp (guard, transitionContext)
         if not tcGuardResult then
             logger (sprintf "Typecheck of '%A' in transtion '%A' failed." guard transition)
 
+        let tcCStmts  = tcAction (Action ("", cStmts), transitionContext)
 
         // Reuse tcAction by constructing an auxilliary action
         // consisting of all statements from the actions to be
@@ -124,7 +127,7 @@ module Typecheck =
         if not tcActionResult then
             logger (sprintf "The actions of '%A [..](%A)> %A' is failing the typecheck." s actionNames s')
 
-        tcActionResult && tcGuardResult
+        tcActionResult && tcGuardResult && tcCStmts
         
 
     // Checks:

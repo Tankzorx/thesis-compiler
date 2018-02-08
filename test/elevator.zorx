@@ -1,7 +1,7 @@
 module Elevator
-    (floorReq: bool in)
-    (floorReqN: int in,
-    readyForInput: bool out) {
+    (floorReq: bool in,
+    readyForInput: bool out)
+    (floorReqN: int in) {
   datapath {
     currentFloor: int reg,
     doorState: bool reg, // false=closed, true=open.
